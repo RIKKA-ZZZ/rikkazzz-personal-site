@@ -5,6 +5,8 @@
 [在线体验](https://rikkazzz.com)
 
 **Personal Reality** 是一个浏览器原生的沉浸式个人作品集，也是一次创意前端实验。项目借鉴 2010 年代日系动画对虚拟现实操作系统的想象，将启动协议、身份认证、空间化 HUD、实时浏览器遥测和作品档案串联成完整的交互叙事。
+<img width="2533" height="1301" alt="image" src="https://github.com/user-attachments/assets/f2bab1d9-06b9-4099-8096-f83c42b54686" />
+<img width="2537" height="1299" alt="image" src="https://github.com/user-attachments/assets/f768763d-a199-4319-9eb2-65123673979f" />
 
 ## 项目定位
 
