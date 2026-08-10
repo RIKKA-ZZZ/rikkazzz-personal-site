@@ -376,10 +376,17 @@ input:focus-visible {
   --shift-y: 0px;
   position: absolute;
   inset: -3%;
-  background: url("./assets/world-background.jpg") center / cover no-repeat;
+  background-color: var(--scene-base);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
   transform: translate3d(var(--shift-x), var(--shift-y), 0) scale(1.045);
   transition: transform 240ms ease-out;
   will-change: transform;
+}
+
+body.is-world-media-ready .world-background {
+  background-image: url("./assets/world-background.jpg");
 }
 
 .world-vignette,
@@ -3066,11 +3073,17 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: url("./assets/world-background-dark.png") center / cover no-repeat;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
   opacity: var(--dark-background-opacity);
   filter: saturate(1.08) contrast(1.02);
   pointer-events: none;
   transition: opacity 720ms var(--ease);
+}
+
+body.is-world-media-ready.is-dark-world-media-ready .world-background::after {
+  background-image: url("./assets/world-background-dark.webp");
 }
 
 .world-vignette,
@@ -6097,6 +6110,115 @@ body[data-scene="world"] .sound-switch {
     width: 190px;
     transform: scale(0.84);
     transform-origin: left top;
+  }
+
+  .identity-window h1 {
+    font-size: clamp(1.85rem, 8.8vw, 2.25rem);
+  }
+
+  .identity-window .eyebrow,
+  .identity-window label {
+    font-size: 0.62rem;
+  }
+
+  .identity-window .window-copy {
+    font-size: 0.79rem;
+    line-height: 1.72;
+  }
+
+  .identity-window .window-topline,
+  .identity-window .window-tab {
+    font-size: 0.58rem;
+  }
+
+  .identity-window .window-foot {
+    font-size: 0.55rem;
+  }
+
+  .identity-window .confirm-button {
+    min-height: 44px;
+    font-size: 0.66rem;
+  }
+
+  .widget-performance {
+    width: 176px;
+    transform: scale(0.9);
+  }
+
+  .widget-kicker,
+  .widget-metrics small,
+  .widget-footline {
+    font-size: 0.54rem;
+  }
+
+  .widget-metrics strong {
+    font-size: 1.12rem;
+  }
+}
+
+@supports (height: 100dvh) {
+  .reality-app,
+  .scene {
+    height: 100dvh;
+  }
+
+  .video-gallery-window {
+    max-height: calc(100dvh - 110px);
+  }
+
+  @media (max-width: 760px) {
+    .video-gallery-window {
+      max-height: calc(100dvh - 98px);
+    }
+  }
+}
+
+@media (max-width: 720px), (hover: none) and (pointer: coarse) {
+  body[data-performance="balanced"] .sound-switch {
+    width: 44px;
+    height: 44px;
+  }
+
+  body[data-performance="balanced"] .theme-switch,
+  body[data-performance="balanced"] .entry-start {
+    min-height: 44px;
+  }
+
+  body[data-performance="balanced"] .entry-scene::before {
+    animation-duration: 15s;
+  }
+
+  body[data-performance="balanced"] .entry-grid {
+    animation-duration: 22s;
+  }
+
+  body[data-performance="balanced"] .entry-particles i:nth-child(n + 5),
+  body[data-performance="balanced"] .spatial-depth-field i:nth-child(n + 4),
+  body[data-performance="balanced"] .ambient-orbit-outer,
+  body[data-performance="balanced"] .ambient-orbit-middle {
+    display: none;
+  }
+
+  body[data-performance="balanced"] .hud-glass,
+  body[data-performance="balanced"] .sao-window,
+  body[data-performance="balanced"] .video-gallery-window,
+  body[data-performance="balanced"] .video-card {
+    -webkit-backdrop-filter: blur(6px) saturate(1.02);
+    backdrop-filter: blur(6px) saturate(1.02);
+  }
+
+  body[data-performance="balanced"] .world-background,
+  body[data-performance="balanced"] .hud-widget {
+    will-change: auto;
+  }
+
+  body[data-performance="balanced"] .world-background::after {
+    filter: none;
+  }
+
+  body[data-performance="balanced"] .widget-performance::before,
+  body[data-performance="balanced"] .hud-widget::after {
+    animation: none;
   }
 }
 /* Main-world content panels use a straight four-sided silhouette. */

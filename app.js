@@ -54,9 +54,13 @@
     return targets;
   }, {});
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const balancedPerformanceQuery = window.matchMedia('(max-width: 720px), (hover: none), (pointer: coarse)');
+  const balancedPerformanceMode = balancedPerformanceQuery.matches;
   const sceneFadeDuration = 920;
   const sceneMaterializeDuration = 2200;
   const sceneFocusDelay = 1380;
+
+  body.dataset.performance = balancedPerformanceMode ? 'balanced' : 'full';
 
   const viewLabels = {
     blog: { kicker: 'VISUAL ARCHIVE', tab: 'WORKS' },
@@ -114,8 +118,9 @@
 
   const soundBank = Object.fromEntries(
     Object.entries(soundSources).map(([name, [source, volume]]) => {
-      const audio = new Audio(source);
-      audio.preload = 'auto';
+      const audio = new Audio();
+      audio.preload = 'none';
+      audio.src = source;
       audio.volume = volume;
       return [name, audio];
     }),
@@ -129,6 +134,13 @@
   let soundEnabled = true;
   let lastHoverSoundAt = 0;
   let introAudioStarted = false;
+  let introVideoStarted = false;
+  let introAudioRevealPending = false;
+  let introSyncTimer;
+  let introLoadFallbackTimer;
+  let introTransitionStarted = false;
+  let introMediaRequested = false;
+  let worldMediaRequested = false;
   let galleryRestoreFocus = null;
   let galleryCloseTimer;
   let gallerySettleTimer;
@@ -147,6 +159,24 @@
     body.dataset.sound = soundEnabled ? 'on' : 'off';
     soundButton.setAttribute('aria-pressed', String(soundEnabled));
     soundButton.setAttribute('aria-label', soundEnabled ? '关闭界面音效' : '开启界面音效');
+  }
+
+  function prepareWorldMedia() {
+    if (!worldMediaRequested) {
+      worldMediaRequested = true;
+      body.classList.add('is-world-media-ready');
+    }
+    if (root.dataset.theme === 'dark') body.classList.add('is-dark-world-media-ready');
+  }
+
+  function prepareIntroMedia() {
+    if (introMediaRequested) return;
+    introMediaRequested = true;
+
+    if (!introVideo.hasAttribute('src') && introVideo.dataset.src) introVideo.src = introVideo.dataset.src;
+    if (!introAudio.hasAttribute('src') && introAudio.dataset.src) introAudio.src = introAudio.dataset.src;
+    introVideo.load();
+    introAudio.load();
   }
 
   function playSound(name, { force = false, volumeScale = 1 } = {}) {
@@ -204,6 +234,23 @@
       localStorage.setItem('nexus-sound-enabled', String(soundEnabled));
     } catch {}
     updateSoundButton();
+    if (activeScene === 'intro') {
+      if (!soundEnabled) {
+        introAudio.muted = true;
+        stopIntroSync();
+        body.dataset.introAudio = 'off';
+      } else if (introMediaRequested) {
+        introAudio.muted = true;
+        introAudio.play().then(() => {
+          introAudioStarted = true;
+          body.dataset.introAudio = 'starting';
+          makeIntroAudioAudible();
+        }).catch(() => {
+          body.dataset.introAudio = 'unavailable';
+        });
+      }
+      return;
+    }
     if (soundEnabled) playSound('system', { force: true });
   });
 
@@ -216,6 +263,7 @@
     themeButton.setAttribute('aria-label', isDark ? '切换到亮色主题' : '切换到暗色主题');
     themeLabel.textContent = isDark ? 'DARK' : 'LIGHT';
     themeColor.setAttribute('content', isDark ? '#020815' : '#dff6ff');
+    if (isDark && worldMediaRequested) body.classList.add('is-dark-world-media-ready');
 
     if (persist) {
       try {
@@ -575,16 +623,90 @@
     }, delay);
   }
 
+  function stopIntroSync() {
+    window.clearInterval(introSyncTimer);
+    introSyncTimer = undefined;
+    introAudio.playbackRate = 1;
+    introAudioRevealPending = false;
+  }
+
+  function syncIntroAudio(force = false) {
+    if (!introAudioStarted || introAudio.paused || introVideo.paused || introAudio.muted) return;
+    const drift = introAudio.currentTime - introVideo.currentTime;
+
+    if (force || Math.abs(drift) > 0.085) {
+      introAudio.currentTime = Math.max(0, introVideo.currentTime);
+      introAudio.playbackRate = 1;
+      return;
+    }
+
+    introAudio.playbackRate = Math.abs(drift) > 0.025
+      ? Math.max(0.985, Math.min(1.015, 1 - drift * 0.18))
+      : 1;
+  }
+
+  function makeIntroAudioAudible() {
+    if (!soundEnabled || !introVideoStarted || !introAudioStarted || introAudioRevealPending) return;
+    introAudioRevealPending = true;
+
+    const revealAudio = () => {
+      introAudioRevealPending = false;
+      if (activeScene !== 'intro' || !soundEnabled || introVideo.paused || introAudio.paused) return;
+      introAudio.currentTime = Math.max(0, introVideo.currentTime);
+      introAudio.playbackRate = 1;
+      introAudio.muted = false;
+      body.dataset.introAudio = 'playing';
+      window.clearInterval(introSyncTimer);
+      introSyncTimer = window.setInterval(() => syncIntroAudio(), 180);
+    };
+
+    if (typeof introVideo.requestVideoFrameCallback === 'function') {
+      introVideo.requestVideoFrameCallback(revealAudio);
+    } else {
+      window.setTimeout(revealAudio, 0);
+    }
+  }
+
+  function startIntroTransition() {
+    if (introTransitionStarted) return;
+    introTransitionStarted = true;
+    window.clearTimeout(introLoadFallbackTimer);
+
+    const launchRevealDelay = balancedPerformanceMode ? 90 : 320;
+    const launchFadeDuration = balancedPerformanceMode ? 360 : sceneFadeDuration;
+    window.setTimeout(() => {
+      entryScene.classList.add('is-dissolving');
+      introScene.classList.remove('is-underlay');
+    }, launchRevealDelay);
+
+    window.setTimeout(() => {
+      entryScene.classList.remove('is-active', 'is-launching', 'is-dissolving');
+      entryScene.setAttribute('aria-hidden', 'true');
+      entryScene.inert = true;
+    }, launchRevealDelay + launchFadeDuration);
+  }
+
   function finishIntro() {
     if (introFinished) return;
     introFinished = true;
+    window.clearTimeout(introLoadFallbackTimer);
+    stopIntroSync();
     introVideo.pause();
     introAudio.pause();
+    introAudio.muted = true;
     body.dataset.introAudio = 'complete';
     revealScene(worldScene, 'world', introScene);
     window.setTimeout(() => {
       identityInput.focus({ preventScroll: true });
     }, reducedMotion.matches ? 0 : sceneFocusDelay);
+
+    window.setTimeout(() => {
+      if (body.dataset.scene === 'intro') return;
+      introVideo.removeAttribute('src');
+      introAudio.removeAttribute('src');
+      introVideo.load();
+      introAudio.load();
+    }, reducedMotion.matches ? 0 : sceneFadeDuration + 250);
   }
 
   function beginIntroPlayback() {
@@ -592,6 +714,7 @@
     experienceStarting = true;
     startExperienceButton.disabled = true;
     entryScene.classList.add('is-launching');
+    prepareWorldMedia();
 
     if (reducedMotion.matches) {
       revealScene(worldScene, 'world', entryScene);
@@ -599,7 +722,9 @@
       return;
     }
 
+    prepareIntroMedia();
     introFinished = false;
+    introTransitionStarted = false;
     activeScene = 'intro';
     body.dataset.scene = 'intro';
     introScene.inert = false;
@@ -612,17 +737,23 @@
     introAudio.pause();
     introAudio.currentTime = 0;
     introAudio.volume = 0.78;
+    introAudio.muted = true;
+    introAudio.playbackRate = 1;
     introAudioStarted = false;
+    introVideoStarted = false;
     body.dataset.introAudio = soundEnabled ? 'starting' : 'off';
 
     const videoPlayback = introVideo.play();
     const audioPlayback = soundEnabled ? introAudio.play() : null;
 
     videoPlayback.then(() => {
+      introVideoStarted = true;
       if (!soundEnabled) body.dataset.introAudio = 'off';
       else if (!introAudioStarted) body.dataset.introAudio = 'starting';
       introScene.classList.add('is-playing');
       if (introVideo.readyState >= 2) introScene.classList.add('is-video-ready');
+      startIntroTransition();
+      makeIntroAudioAudible();
     }).catch(() => {
       body.dataset.introVideo = 'unavailable';
       finishIntro();
@@ -630,26 +761,27 @@
 
     audioPlayback?.then(() => {
       introAudioStarted = true;
-      body.dataset.introAudio = 'playing';
+      body.dataset.introAudio = 'starting';
+      makeIntroAudioAudible();
     }).catch(() => {
       body.dataset.introAudio = 'unavailable';
     });
 
-    const launchRevealDelay = 520;
-    window.setTimeout(() => {
-      entryScene.classList.add('is-dissolving');
-      introScene.classList.remove('is-underlay');
-    }, launchRevealDelay);
-
-    window.setTimeout(() => {
-      entryScene.classList.remove('is-active', 'is-launching', 'is-dissolving');
-      entryScene.setAttribute('aria-hidden', 'true');
-      entryScene.inert = true;
-    }, launchRevealDelay + sceneFadeDuration);
+    introLoadFallbackTimer = window.setTimeout(() => {
+      if (!introVideoStarted && activeScene === 'intro') {
+        body.dataset.introVideo = 'timeout';
+        finishIntro();
+      }
+    }, 12_000);
   }
 
   introVideo.addEventListener('loadeddata', () => introScene.classList.add('is-video-ready'));
   introVideo.addEventListener('canplay', () => introScene.classList.add('is-video-ready'));
+  introVideo.addEventListener('playing', () => {
+    introVideoStarted = true;
+    startIntroTransition();
+    makeIntroAudioAudible();
+  });
   introVideo.addEventListener('ended', finishIntro);
   introVideo.addEventListener('error', () => {
     body.dataset.introVideo = 'unavailable';
@@ -661,9 +793,7 @@
   });
 
   introVideo.addEventListener('timeupdate', () => {
-    if (!introAudioStarted || introAudio.paused) return;
-    const drift = introAudio.currentTime - introVideo.currentTime;
-    if (Math.abs(drift) > 0.3) introAudio.currentTime = introVideo.currentTime;
+    syncIntroAudio();
   });
 
   startExperienceButton.addEventListener('click', beginIntroPlayback);
@@ -671,6 +801,7 @@
   document.querySelector('.skip-link').addEventListener('click', (event) => {
     event.preventDefault();
     if (activeScene === 'entry') {
+      prepareWorldMedia();
       revealScene(worldScene, 'world', entryScene);
       window.setTimeout(() => identityInput.focus({ preventScroll: true }), reducedMotion.matches ? 0 : sceneFocusDelay);
     } else if (activeScene === 'intro') {
@@ -1002,7 +1133,7 @@
       requestAnimationFrame(updateIdleFloat);
     }
 
-    requestAnimationFrame(updateIdleFloat);
+    if (!balancedPerformanceMode) requestAnimationFrame(updateIdleFloat);
 
     app.addEventListener('pointermove', (event) => {
       if (event.pointerType === 'touch') return;
