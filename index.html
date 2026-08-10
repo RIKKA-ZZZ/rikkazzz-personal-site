@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" id="theme-color" content="#dff6ff">
+    <meta name="description" content="RIKKAzzz 的个人数字空间——在特效、三维与生成式 AI 之间，构筑属于自己的数字世界。">
+    <title>RIKKAzzz // Personal Reality</title>
+    <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+    <link rel="preload" href="./assets/intro-1222-h264.mp4" as="video" type="video/mp4">
+    <link rel="preload" href="./assets/audio/intro-theme-1222.m4a" as="audio" type="audio/mp4">
+    <link rel="preload" href="./assets/world-background.jpg" as="image" type="image/jpeg">
+    <link rel="preload" href="./assets/world-background-dark.png" as="image" type="image/png">
+    <script>
+      (() => {
+        try {
+          const savedTheme = localStorage.getItem('nexus-theme');
+          document.documentElement.dataset.theme = savedTheme === 'dark' ? 'dark' : 'light';
+        } catch {}
+      })();
+    </script>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./app.js" defer></script>
+  </head>
+  <body data-scene="entry">
+    <svg class="ui-shape-defs" width="0" height="0" aria-hidden="true" focusable="false">
+      <defs>
+        <clipPath id="sao-panel-clip" clipPathUnits="objectBoundingBox">
+          <path d="M .014 .020 C .024 .010, .085 .006, .150 .006 C .340 .004, .660 .004, .850 .006 C .915 .006, .976 .010, .986 .020 C .996 .030, .996 .160, .997 .280 C 1 .390, 1 .610, .997 .720 C .996 .840, .996 .968, .986 .978 C .976 .988, .915 .994, .850 .994 C .660 .996, .340 .996, .150 .994 C .085 .994, .024 .988, .014 .978 C .004 .968, .004 .840, .003 .720 C 0 .610, 0 .390, .003 .280 C .004 .160, .004 .030, .014 .020 Z"></path>
+        </clipPath>
+        <clipPath id="sao-hud-clip" clipPathUnits="objectBoundingBox">
+          <path d="M .005 .020 C .012 .010, .085 .006, .150 .006 C .340 .004, .660 .004, .850 .006 C .915 .006, .988 .010, .995 .020 C 1 .030, 1 .160, 1 .280 C 1 .390, 1 .610, 1 .720 C 1 .840, 1 .968, .995 .978 C .988 .988, .915 .994, .850 .994 C .660 .996, .340 .996, .150 .994 C .085 .994, .012 .988, .005 .978 C 0 .968, 0 .840, 0 .720 C 0 .610, 0 .390, 0 .280 C 0 .160, 0 .030, .005 .020 Z"></path>
+        </clipPath>
+        <clipPath id="sao-main-clip" clipPathUnits="objectBoundingBox">
+          <path d="M .010 .012 C .021 .005, .090 .004, .150 .004 C .350 .003, .650 .003, .850 .004 C .910 .004, .979 .005, .990 .012 C .996 .020, .997 .160, .998 .280 C 1 .400, 1 .600, .998 .720 C .997 .840, .996 .980, .990 .988 C .979 .995, .910 .996, .850 .996 C .650 .997, .350 .997, .150 .996 C .090 .996, .021 .995, .010 .988 C .004 .980, .003 .840, .002 .720 C 0 .600, 0 .400, .002 .280 C .003 .160, .004 .020, .010 .012 Z"></path>
+        </clipPath>
+      </defs>
+    </svg>
+
+    <a class="skip-link" href="#visitor-name">跳到身份连接</a>
+
+    <main class="reality-app" id="app">
+      <section class="scene entry-scene is-active" id="entry-scene" aria-label="个人现实启动界面">
+        <div class="entry-grid" aria-hidden="true"></div>
+        <div class="entry-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="entry-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+        <header class="entry-header">
+          <div class="entry-brand"><i aria-hidden="true"></i><span>RIKKAzzz // PERSONAL REALITY</span></div>
+          <div class="entry-protocol"><span>GATE / 00</span><strong>STANDBY</strong></div>
+        </header>
+
+        <div class="entry-coordinate entry-coordinate-left" aria-hidden="true">35.6762° N<br>139.6503° E</div>
+        <div class="entry-coordinate entry-coordinate-right" aria-hidden="true">REALITY LAYER<br>PERSONAL / 01</div>
+
+        <div class="entry-content">
+          <p class="entry-eyebrow"><span></span>PROTOCOL 00 // REALITY HANDSHAKE</p>
+            <h1 class="entry-title" data-title="越过现实边界" aria-label="越过现实边界">
+            <span>越过现实</span><em>边界</em>
+          </h1>
+          <div class="entry-boundary-line" aria-hidden="true"><i></i></div>
+          <p class="entry-description" id="entry-description">在特效、三维与生成式 AI 之间，构筑属于自己的数字世界。</p>
+
+          <button class="entry-start" id="start-experience" type="button" aria-describedby="entry-description">
+            <span class="entry-start-index">00</span>
+            <span class="entry-start-copy"><strong>开始连接</strong><small>ENTER PERSONAL REALITY</small></span>
+            <span class="entry-start-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m8 4 8 8-8 8"></path></svg></span>
+          </button>
+        </div>
+
+        <aside class="entry-status" aria-label="系统状态">
+          <div><span>VISUAL</span><strong>READY</strong></div>
+          <div><span>AUDIO</span><strong>ARMED</strong></div>
+          <div><span>WORLD</span><strong>01</strong></div>
+        </aside>
+
+        <footer class="entry-footer"><span>PERSONAL REALITY SYSTEM</span><span>CLICK START TO INITIALIZE AUDIO</span></footer>
+      </section>
+
+      <section class="scene intro-scene" id="intro-scene" aria-label="开屏动画" aria-hidden="true">
+        <video
+          class="intro-video"
+          id="intro-video"
+          muted
+          playsinline
+          preload="auto"
+          aria-hidden="true"
+        >
+          <source src="./assets/intro-1222-h264.mp4" type="video/mp4">
+        </video>
+        <audio id="intro-audio" src="./assets/audio/intro-theme-1222.m4a" preload="auto" aria-hidden="true"></audio>
+      </section>
+
+      <button class="theme-switch" id="theme-switch" type="button" aria-label="切换到暗色主题" aria-pressed="false">
+        <span class="theme-switch-track" aria-hidden="true">
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24"><path d="M19.5 15.2A8 8 0 0 1 8.8 4.5 8.2 8.2 0 1 0 19.5 15.2Z"></path></svg>
+          <i></i>
+        </span>
+        <span class="theme-switch-label" data-theme-label>LIGHT</span>
+      </button>
+
+      <button class="sound-switch" id="sound-switch" type="button" aria-label="关闭界面音效" aria-pressed="true">
+        <svg class="sound-icon sound-icon-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10v4h4l5 4V6l-5 4Z"></path><path d="M17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11"></path></svg>
+        <svg class="sound-icon sound-icon-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10v4h4l5 4V6l-5 4Z"></path><path d="m17 10 4 4M21 10l-4 4"></path></svg>
+        <span class="sound-switch-pulse" aria-hidden="true"></span>
+      </button>
+
+      <section class="scene world-scene" id="world-scene" aria-label="身份连接界面" aria-hidden="true">
+        <div class="world-background" data-depth="0.15" aria-hidden="true"></div>
+        <div class="spatial-depth-field" data-depth="0.28" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <div class="world-vignette" aria-hidden="true"></div>
+        <div class="hud-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+        <div class="ambient-interface ambient-interface-world" data-depth="0.33" aria-hidden="true">
+          <div class="ambient-orbit ambient-orbit-outer"></div>
+          <div class="ambient-orbit ambient-orbit-middle"></div>
+          <div class="ambient-orbit ambient-orbit-inner"></div>
+          <div class="ambient-pods">
+            <span class="ambient-pod" data-glyph="♫"><small>AUDIO</small></span>
+            <span class="ambient-pod" data-glyph="◎"><small>LINK</small></span>
+            <span class="ambient-pod" data-glyph="⌖"><small>FIELD</small></span>
+          </div>
+          <div class="ambient-readout"><span>SPATIAL UI</span><i></i><strong>DEPTH / 03</strong></div>
+        </div>
+
+        <aside class="player-vitals" aria-label="PLAYER STATUS">
+          <div class="vitals-rank"><span>LV</span><strong>01</strong></div>
+          <div class="vitals-core">
+            <div class="vitals-name"><strong data-display-name>Visitor</strong><small>LINKED</small></div>
+            <div class="vitals-meter vitals-health"><b>HP</b><span><i></i></span><em>100</em></div>
+            <div class="vitals-meter vitals-energy"><b>EN</b><span><i></i></span><em>086</em></div>
+          </div>
+        </aside>
+
+        <header class="world-header hud-glass" data-depth="0.38">
+          <div class="world-clock">
+            <span class="clock-ring" aria-hidden="true"></span>
+            <div><strong id="clock-time">12:48</strong><span id="clock-date">AUG 10</span></div>
+          </div>
+          <div class="world-location">
+            <span>WORLD // 01</span>
+            <strong>THE SKY CITADEL</strong>
+          </div>
+          <div class="world-signal">
+            <span class="status-pulse" aria-hidden="true"></span>
+            <div><strong>LINK STABLE</strong><span>GATEWAY / TYO</span></div>
+          </div>
+        </header>
+
+        <div class="system-hud-desktop" id="system-hud" aria-label="访客设备与世界系统状态">
+          <section class="hud-widget widget-performance" data-system-widget data-depth="0.48" aria-label="网页渲染性能">
+            <div class="widget-kicker"><span>RENDER PERFORMANCE</span><i>LIVE</i></div>
+            <div class="widget-metrics">
+              <div><small>FPS</small><strong data-metric="fps">--</strong></div>
+              <div><small>FRAME</small><strong data-metric="frame-time">-- MS</strong></div>
+            </div>
+            <canvas class="hud-sparkline" id="render-chart" width="252" height="64" role="img" aria-label="当前页面实时帧率折线图">实时帧率折线图</canvas>
+            <div class="widget-footline"><span>16.7MS FRAME BUDGET</span><b data-metric="frame-budget">--%</b></div>
+          </section>
+
+          <section class="hud-widget widget-rings" data-system-widget data-depth="0.56" aria-label="网页运行指标">
+            <div class="widget-kicker"><span>PAGE RESOURCE</span><i>MONITOR</i></div>
+            <div class="metric-ring-group">
+              <figure class="metric-ring" data-ring="fps">
+                <span data-metric="ring-fps">--</span>
+                <figcaption>FPS</figcaption>
+              </figure>
+              <figure class="metric-ring" data-ring="heap">
+                <span data-metric="ring-heap">N/A</span>
+                <figcaption>JS HEAP</figcaption>
+              </figure>
+              <figure class="metric-ring" data-ring="link">
+                <span data-metric="ring-link">N/A</span>
+                <figcaption>LINK</figcaption>
+              </figure>
+            </div>
+            <p>LIVE PAGE METRICS / NOT DEVICE LOAD</p>
+          </section>
+
+          <section class="hud-widget widget-network" data-system-widget data-depth="0.61" aria-label="网络连接状态">
+            <div class="widget-kicker"><span>NETWORK LINK</span><i class="live-dot">ONLINE</i></div>
+            <div class="network-primary">
+              <span>DOWNLINK EST.</span>
+              <strong data-metric="net-downlink">N/A</strong>
+            </div>
+            <div class="network-readouts">
+              <span><small>UPLINK</small><b data-metric="net-uplink">N/A</b></span>
+              <span><small>RTT</small><b data-metric="net-rtt">N/A</b></span>
+              <span><small>TYPE</small><b data-metric="net-type">N/A</b></span>
+            </div>
+            <canvas class="hud-sparkline network-sparkline" id="network-chart" width="248" height="52" role="img" aria-label="浏览器报告的网络下行估计历史">网络连接估计图</canvas>
+            <div class="widget-footline"><span>SESSION RX</span><b data-metric="session-rx">N/A</b></div>
+          </section>
+
+          <section class="hud-widget widget-device" data-system-widget data-depth="0.66" aria-label="访客设备信息">
+            <div class="widget-kicker"><span>VISITOR DEVICE</span><i>LOCAL</i></div>
+            <dl class="device-readouts">
+              <div><dt>LOGICAL CORES</dt><dd data-metric="logical-cores">N/A</dd></div>
+              <div><dt>DEVICE MEMORY</dt><dd data-metric="device-memory">N/A</dd></div>
+              <div><dt>SCREEN</dt><dd data-metric="screen-size">N/A</dd></div>
+              <div><dt>VIEWPORT</dt><dd data-metric="viewport-size">N/A</dd></div>
+              <div><dt>BROWSER</dt><dd data-metric="browser-name">N/A</dd></div>
+              <div><dt>PLATFORM</dt><dd data-metric="platform-name">N/A</dd></div>
+              <div class="device-gpu"><dt>GRAPHICS</dt><dd data-metric="gpu-name">N/A</dd></div>
+              <div><dt>WEBGPU</dt><dd data-metric="webgpu-status">N/A</dd></div>
+            </dl>
+          </section>
+
+          <section class="hud-widget widget-session hud-text-widget" data-system-widget data-depth="0.4" aria-label="当前会话状态">
+            <div class="widget-kicker"><span>SESSION STATUS</span><i class="live-dot">ACTIVE</i></div>
+            <div class="session-clock"><small>LOCAL NODE TIME</small><strong id="hud-clock-time">--:--</strong><span id="hud-clock-date">---</span></div>
+            <dl>
+              <div><dt>UPTIME</dt><dd data-metric="session-uptime">00:00:00</dd></div>
+              <div><dt>VISIBILITY</dt><dd data-metric="visibility-state">ACTIVE</dd></div>
+              <div><dt>NETWORK</dt><dd data-metric="online-state">ONLINE</dd></div>
+              <div><dt>VISITOR</dt><dd data-display-name>Visitor</dd></div>
+            </dl>
+          </section>
+
+          <nav class="hud-quick-actions" data-system-widget data-depth="0.7" aria-label="系统快捷操作">
+            <button class="hud-quick-button is-active" type="button" data-demo-message="身份识别模块处于活动状态。" aria-label="身份识别状态">
+              <b>01</b><span>IDENTITY</span>
+            </button>
+            <button class="hud-quick-button" type="button" data-demo-message="声音通道由右上角音效开关控制。" aria-label="声音通道信息">
+              <b>02</b><span>AUDIO</span>
+            </button>
+            <button class="hud-quick-button" type="button" data-demo-message="世界节点 01：天空之城连接稳定。" aria-label="世界连接信息">
+              <b>03</b><span>WORLD</span>
+            </button>
+          </nav>
+        </div>
+
+        <div class="identity-composition" id="identity-composition">
+          <div class="identity-focus-shade" aria-hidden="true"></div>
+          <nav class="node-rail" aria-label="连接阶段" data-depth="0.7">
+            <button class="node-button is-active" type="button" aria-label="身份识别" aria-current="step">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20c.7-4 2.8-6 6.5-6s5.8 2 6.5 6"></path></svg>
+            </button>
+            <span class="node-link"></span>
+            <button class="node-button" type="button" aria-label="世界同步" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5"></path><path d="m18 3 .5 4.5L14 8"></path><path d="M20 12a8 8 0 0 1-14 5"></path><path d="m6 21-.5-4.5L10 16"></path></svg>
+            </button>
+            <span class="node-link"></span>
+            <button class="node-button" type="button" aria-label="进入空间" disabled>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 7 8-4 8 4v10l-8 4-8-4Z"></path><path d="m4 7 8 4 8-4M12 11v10"></path></svg>
+            </button>
+          </nav>
+
+          <form class="identity-window sao-window" id="identity-form" data-depth="0.92" novalidate>
+            <div class="window-topline">
+              <span>ACCESS GATE</span>
+              <span>01 / IDENTIFICATION</span>
+            </div>
+            <div class="window-tab">INFORMATION</div>
+            <div class="window-connector" aria-hidden="true"></div>
+
+            <div class="identity-seal" aria-hidden="true">
+              <span></span>
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.5 20c.7-4 2.8-6 6.5-6s5.8 2 6.5 6"></path></svg>
+            </div>
+
+            <p class="eyebrow">VISITOR REGISTRATION</p>
+            <h1>访问者身份确认</h1>
+            <p class="window-copy">请输入希望在这个世界中使用的称呼。数据仅保存在当前浏览器会话。</p>
+
+            <label for="visitor-name">DISPLAY NAME</label>
+            <div class="name-field" id="name-field">
+              <input id="visitor-name" name="visitor-name" type="text" maxlength="24" autocomplete="nickname" placeholder="YOUR NAME" aria-describedby="name-message">
+              <span class="field-scan" aria-hidden="true"></span>
+            </div>
+            <p class="form-message" id="name-message" aria-live="polite"></p>
+
+            <button class="confirm-button" type="submit">
+              <span>CONFIRM</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 4 8 8-8 8"></path></svg>
+            </button>
+
+            <div class="window-foot">
+              <span>LOCAL SESSION</span>
+              <span>SECURE LINK</span>
+            </div>
+          </form>
+
+          <aside class="world-note hud-glass" data-depth="0.55" aria-label="世界状态">
+            <span class="note-index">WORLD NOTE / 001</span>
+            <strong>主世界已连接</strong>
+            <p>环境同步完成。视觉、听觉与交互通道处于待命状态。</p>
+            <dl>
+              <div><dt>SKY</dt><dd>CLEAR</dd></div>
+              <div><dt>WIND</dt><dd>02.4</dd></div>
+              <div><dt>PLAYERS</dt><dd>0001</dd></div>
+            </dl>
+          </aside>
+
+          <div class="welcome-window sao-window" id="welcome-window" data-depth="0.92" aria-hidden="true">
+            <div class="window-topline"><span>ACCESS GRANTED</span><span>02 / SYNCHRONIZED</span></div>
+            <div class="welcome-emblem" aria-hidden="true"><span></span></div>
+            <p class="eyebrow">IDENTITY LINK COMPLETE</p>
+            <h2>Welcome,<br><span data-display-name>Visitor</span></h2>
+            <p>你的个人空间已经准备完成。</p>
+            <button class="enter-world-button" id="enter-world" type="button"><span>ENTER WORLD</span><i aria-hidden="true"></i></button>
+          </div>
+        </div>
+
+        <footer class="world-footer">
+          <span>PERSONAL REALITY SYSTEM</span>
+          <span>MOVE POINTER TO SHIFT VIEW</span>
+        </footer>
+      </section>
+
+      <section class="scene home-scene" id="home-scene" aria-label="个人虚拟现实空间" aria-hidden="true">
+        <div class="world-background" data-depth="0.15" aria-hidden="true"></div>
+        <div class="spatial-depth-field" data-depth="0.28" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <div class="home-depth" aria-hidden="true"></div>
+        <div class="hud-corners" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+        <div class="ambient-interface ambient-interface-home" data-depth="0.36" aria-hidden="true">
+          <div class="ambient-orbit ambient-orbit-outer"></div>
+          <div class="ambient-orbit ambient-orbit-middle"></div>
+          <div class="ambient-orbit ambient-orbit-inner"></div>
+          <div class="ambient-pods">
+            <span class="ambient-pod" data-glyph="◫"><small>MEMORY</small></span>
+            <span class="ambient-pod" data-glyph="◇"><small>BUILD</small></span>
+            <span class="ambient-pod" data-glyph="○"><small>IDENTITY</small></span>
+          </div>
+          <div class="ambient-readout"><span>PERSONAL LAYER</span><i></i><strong>SYNC / 01</strong></div>
+        </div>
+
+        <aside class="player-vitals" aria-label="PLAYER STATUS">
+          <div class="vitals-rank"><span>LV</span><strong>01</strong></div>
+          <div class="vitals-core">
+            <div class="vitals-name"><strong data-display-name>Visitor</strong><small>LINKED</small></div>
+            <div class="vitals-meter vitals-health"><b>HP</b><span><i></i></span><em>100</em></div>
+            <div class="vitals-meter vitals-energy"><b>EN</b><span><i></i></span><em>086</em></div>
+          </div>
+        </aside>
+
+        <header class="home-header hud-glass" data-depth="0.42">
+          <div class="world-clock">
+            <span class="clock-ring" aria-hidden="true"></span>
+            <div><strong id="home-clock-time">12:48</strong><span id="home-clock-date">AUG 10</span></div>
+          </div>
+          <div class="home-title">
+            <span>RIKKAzzz // PERSONAL REALITY</span>
+            <strong>THE SKY CITADEL</strong>
+          </div>
+          <button class="user-chip" id="restart-experience" type="button" aria-label="重新体验开屏与登录">
+            <span class="status-pulse" aria-hidden="true"></span>
+            <span data-display-name>Visitor</span>
+          </button>
+        </header>
+
+        <nav class="home-node-rail" aria-label="空间导航" data-depth="0.72">
+          <button class="home-node is-active" type="button" data-view-button="blog" aria-label="影像档案" aria-selected="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3Z"></path><path d="M8 4v16M11 8h4M11 12h4"></path></svg>
+            <span>WORKS</span>
+          </button>
+          <span class="rail-stem"></span>
+          <button class="home-node" type="button" data-view-button="projects" aria-label="构建记录" aria-selected="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 7 8-4 8 4v10l-8 4-8-4Z"></path><path d="m4 7 8 4 8-4M12 11v10"></path></svg>
+            <span>BUILDS</span>
+          </button>
+          <span class="rail-stem"></span>
+          <button class="home-node" type="button" data-view-button="about" aria-label="身份节点" aria-selected="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20c.7-4 2.8-6 6.5-6s5.8 2 6.5 6"></path></svg>
+            <span>IDENTITY</span>
+          </button>
+        </nav>
+
+        <main class="home-workspace" data-depth="0.88">
+          <section class="content-window sao-window">
+            <div class="window-topline">
+              <span id="view-kicker">VISUAL ARCHIVE</span>
+              <span>PERSONAL NODE / 001</span>
+            </div>
+            <div class="window-tab" id="view-tab">WORKS</div>
+            <div class="window-connector window-connector-left" aria-hidden="true"></div>
+
+            <div class="content-view is-active" data-view-panel="blog" aria-labelledby="blog-title">
+              <div class="view-heading">
+                <p class="eyebrow">VISUAL ARCHIVE // BILIBILI</p>
+                <h1 id="blog-title">影像档案</h1>
+                <p>收录发布于 Bilibili 的 VFX、PV、生成式影像与三维视觉作品。<a class="bilibili-link archive-space-link" href="https://space.bilibili.com/1174684440" target="_blank" rel="noopener noreferrer">进入 Bilibili 主页 ↗</a></p>
+              </div>
+              <div class="memory-list">
+                <button type="button" data-video-gallery-open="motion" aria-haspopup="dialog" aria-controls="vfx-gallery">
+                  <span class="memory-number">01</span><span><small>VFX / MOTION DESIGN</small><strong>AE 特效、剪辑与视觉 PV</strong></span><time>08 FILES</time>
+                </button>
+                <button type="button" data-video-gallery-open="digital" aria-haspopup="dialog" aria-controls="vfx-gallery">
+                  <span class="memory-number">02</span><span><small>AI / DIGITAL PROJECT</small><strong>AI 工具与网站实验</strong></span><time>01 FILE</time>
+                </button>
+                <button type="button" data-video-gallery-open="anime" aria-haspopup="dialog" aria-controls="vfx-gallery">
+                  <span class="memory-number">03</span><span><small>ANIME / VFX ARCHIVE</small><strong>动漫视觉与 VFX 创作</strong></span><time>02 FILES</time>
+                </button>
+              </div>
+            </div>
+
+            <div class="content-view" data-view-panel="projects" aria-labelledby="projects-title" hidden>
+              <div class="view-heading">
+                <p class="eyebrow">BUILD INVENTORY // PROJECTS</p>
+                <h1 id="projects-title">实验项目</h1>
+                <p>围绕视觉设计、本地生成式 AI 与智能体构建的个人实验室。</p>
+              </div>
+              <div class="project-list">
+                <article><span>BUILD 001</span><strong>VFX / PV Lab</strong><p>使用 After Effects 进行剪辑、视觉特效与 PV 创作。</p><i>ACTIVE</i></article>
+                <article><span>BUILD 002</span><strong>Local AI Studio</strong><p>通过 ComfyUI 与开源模型在本地生成图像和视频。</p><i>ONLINE</i></article>
+                <article><span>BUILD 003</span><strong>Agent Playground</strong><p>使用各种 AI Agent 完成有趣的创意项目与自动化实验。</p><i>EXPERIMENT</i></article>
+              </div>
+            </div>
+
+            <div class="content-view" data-view-panel="about" aria-labelledby="about-title" hidden>
+              <div class="identity-profile">
+                <div class="profile-emblem"><img src="./assets/avatar-rikkazzz.png" alt="RIKKAzzz 的头像"><span aria-hidden="true"></span></div>
+                <div>
+                  <p class="eyebrow">OWNER IDENTITY // PROFILE</p>
+                  <h1 id="about-title">RIKKAzzz</h1>
+                  <p>18 岁，高三在读。视觉设计与生成式 AI 创作者。拥有 3 年 After Effects 使用经验，喜欢剪辑、VFX 与 PV，也使用 Blender 构建三维画面；在本地通过 ComfyUI 和开源模型生成图像与视频，并用 AI Agent 探索各种有趣项目。动漫、轻小说与 Galgame 爱好者，六年老二次元。</p>
+                  <div class="profile-tags"><span>AFTER EFFECTS</span><span>BLENDER</span><span>COMFYUI</span><span>AI AGENT</span><span>ACG</span></div>
+                </div>
+              </div>
+
+              <section class="contact-node" aria-labelledby="contact-node-title">
+                <div class="contact-node-heading">
+                  <span id="contact-node-title">CONTACT LINK // DIRECT CHANNELS</span>
+                  <i>04 CHANNELS / ONLINE</i>
+                </div>
+                <div class="contact-grid">
+                  <a class="contact-link" href="https://x.com/RIKKAzzz6" target="_blank" rel="noopener noreferrer" aria-label="在 X 上联系 RIKKAzzz">
+                    <small>01 / X</small><strong>@RIKKAzzz6</strong><em>OPEN ↗</em>
+                  </a>
+                  <a class="contact-link" href="mailto:aaalhlp@gmail.com" aria-label="给 RIKKAzzz 发送 Gmail 邮件">
+                    <small>02 / GMAIL</small><strong>aaalhlp@gmail.com</strong><em>MAIL ↗</em>
+                  </a>
+                  <button class="contact-link" type="button" data-contact-copy="3152089621" data-contact-label="QQ 号" aria-label="复制 QQ 号 3152089621">
+                    <small>03 / QQ</small><strong>3152089621</strong><em>COPY +</em>
+                  </button>
+                  <a class="contact-link" href="https://github.com/RIKKA-ZZZ" target="_blank" rel="noopener noreferrer" aria-label="访问 RIKKA-ZZZ 的 GitHub 主页">
+                    <small>04 / GITHUB</small><strong>RIKKA-ZZZ</strong><em>OPEN ↗</em>
+                  </a>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <aside class="profile-window sao-window">
+            <div class="window-topline"><span>SYSTEM OWNER</span><span>ONLINE</span></div>
+            <div class="mini-avatar"><img src="./assets/avatar-rikkazzz.png" alt="RIKKAzzz 的头像"></div>
+            <strong>RIKKAzzz</strong>
+            <span>VISUAL CREATOR · <a class="bilibili-link" href="https://space.bilibili.com/1174684440" target="_blank" rel="noopener noreferrer">BILIBILI ↗</a></span>
+            <dl>
+              <div><dt>AE EXP.</dt><dd>03Y</dd></div>
+              <div><dt>STATUS</dt><dd>LINKED</dd></div>
+              <div><dt>ZONE</dt><dd>CREATIVE-01</dd></div>
+            </dl>
+          </aside>
+        </main>
+
+        <div class="video-gallery-overlay" id="vfx-gallery" hidden aria-hidden="true">
+          <button class="video-gallery-backdrop" type="button" data-video-gallery-close tabindex="-1" aria-label="关闭作品浮窗"></button>
+          <section class="video-gallery-window sao-window" role="dialog" aria-modal="true" aria-labelledby="vfx-gallery-title">
+            <div class="window-topline"><span id="video-gallery-kicker">VISUAL ARCHIVE / VFX-PV</span><span id="video-gallery-count">08 ITEMS / ONLINE</span></div>
+            <button class="video-gallery-close" type="button" data-video-gallery-close aria-label="关闭作品浮窗"><span aria-hidden="true"></span></button>
+
+            <header class="video-gallery-heading">
+              <p class="eyebrow" id="video-gallery-eyebrow">MOTION DESIGN // SELECTED WORKS</p>
+              <h2 id="vfx-gallery-title">AE 特效与视觉 PV</h2>
+              <p id="video-gallery-description">选择封面后将在新页面打开对应的 Bilibili 视频。</p>
+            </header>
+
+            <div class="video-gallery-grid" data-video-gallery-page="motion">
+              <a class="video-card" href="https://www.bilibili.com/video/BV1VhVezTE7B" target="_blank" rel="noopener noreferrer" aria-label="在 Bilibili 观看《PV练习：妄想感伤代偿联盟》">
+                <span class="video-cover">
+                  <img src="./assets/video-pv-mousou.webp" alt="《PV练习：妄想感伤代偿联盟》视频封面">
+                  <span class="video-duration">01:19</span>
+                  <span class="video-play" aria-hidden="true"><i></i></span>
+                </span>
+                <span class="video-file-meta"><small>FILE 01 / PV PRACTICE</small><em>WATCH ↗</em></span>
+                <strong>【PV练习】妄想感伤代偿联盟</strong>
+              </a>
+
+              <a class="video-card" href="https://www.bilibili.com/video/BV19KK9zzEMK" target="_blank" rel="noopener noreferrer" aria-label="在 Bilibili 观看《VFX/RE0：从零开始》">
+                <span class="video-cover">
+                  <img src="./assets/video-vfx-re0.webp" alt="《VFX/RE0：从零开始》视频封面">
+                  <span class="video-duration">00:34</span>
+                  <span class="video-play" aria-hidden="true"><i></i></span>
+                </span>
+                <span class="video-file-meta"><small>FILE 02 / VFX-RE0</small><em>WATCH ↗</em></span>
+                <strong>【VFX/RE0】从零开始</strong>
+              </a>
+
+              <a class="video-card" href="https://www.bilibili.com/video/BV1q5dgYzEin" target="_blank" rel="noopener noreferrer" aria-label="在 Bilibili 观看《vfx：仿son1x》">
+                <span class="video-cover">
+                  <img src="./assets/video-BV1q5dgYzEin.jpg" alt="《vfx：仿son1x》视频封面">
+                  <span class="video-duration">00:19</span>
+                  <span class="video-play" aria-hidden="true"><i></i></span>
+                </span>
+                <span class="video-file-meta"><small>FILE 03 / VFX STUDY</small><em>WATCH ↗</em></span>
+                <strong>【VFX】仿 son1x</strong>
+              </a>
+
+              <a class="video-card" href="https://www.bilibili.com/video/BV1MHMsz9EGn" target="_blank" rel="noopener noreferrer" aria-label="在 Bilibili 观看《MG/仿：绝区零风格》">
+                <span class="video-cover">
+                  <img src="./assets/video-BV1MHMsz9EGn.jpg" alt="《MG/仿：绝区零风格》视频封面">
+                  <span class="video-duration">00:18</span>
+                  <span class="video-play" aria-hidden="true"><i></i></span>
+                </span>
+                <span class="video-file-meta"><small>FILE 04 / MG STUDY</small><em>WATCH ↗</em></span>
+                <strong>【MG/仿】绝区零风格</strong>
+              </a>
+
+              <a class="video-card" href="https://www.bilibili.com/video/BV1bJ23BwEDL" target="_blank" rel="noopener noreferrer" aria-label="在 Bilibili 观看《文字PV：视奸/DECO*27》">
+                <span class="video-cover">
+                  <img src="./assets/video-BV1bJ23BwEDL.jpg" alt="《文字PV：视奸/DECO*27》视频封面">
+                  <span class="video-duration">00:26</span>
+                  <span class="video-play" aria-hidden="true"><i></i></span>
+                </span>
+                <span class="video-file-meta"><small>FILE 05 / TYPOGRAPHIC PV</small><em>WATCH ↗</em></span>
+                <strong>【文字PV】视奸 / DECO*27</strong>
+              </a>
+
+              <a class="video-card" href="https://www.bilibili.com/video/BV1xrQJYMECb" target="_blank" rel="noopener noreferrer" aria-label="在 Bilibili 观看《PV练习：新世纪福音战士》">
+                <span class="video-cover">
+                  <img src="./assets/video-BV1xrQJYMECb.jpg" alt="《PV练习：新世纪福音战士》视频封面">
+                  <span class="video-duration">01:51</span>
+                  <span class="video-play" aria-hidden="true"><i></i></span>
+                </span>
+                <span class="video-file-meta"><small>FILE 06 / PV PRACTICE</small><em>WATCH ↗</em></span>
+                <strong>【PV练习】新世纪福音战士</strong>
+              </a>
+
+              <a class="video-card" href="https://www.bilibili.com/video/BV1n9BvYMEeP" target="_blank" rel="noopener noreferrer" aria-label="在 Bilibili 观看《仿羁绊者VFX》">
+                <span class="video-cover">
+                  <img src="./assets/video-BV1n9BvYMEeP.jpg" alt="《仿羁绊者VFX》视频封面">
+                  <span class="video-duration">00:43</span>
+                  <span class="video-play" aria-hidden="true"><i></i></span>
+                </span>
+                <span class="video-file-meta"><small>FILE 07 / VFX STUDY</small><em>WATCH ↗</em></span>
+                <strong>仿羁绊者 VFX</strong>
+              </a>
+
+              <a class="video-card" href="https://www.bilibili.com/video/BV1agVJ65EYQ" target="_blank" rel="noopener noreferrer" aria-label="在 Bilibili 观看《校园防霸凌：无声处》">
+                <span class="video-cover">
+                  <img src="./assets/video-BV1agVJ65EYQ.jpg" alt="《校园防霸凌：无声处》视频封面">
+                  <span class="video-duration">00:45</span>
+                  <span class="video-play" aria-hidden="true"><i></i></span>
+                </span>
+                <span class="video-file-meta"><small>FILE 08 / VISUAL MESSAGE</small><em>WATCH ↗</em></span>
+                <strong>【校园防霸凌】无声处</strong>
+              </a>
+            </div>
+
+            <div class="video-gallery-grid is-single" data-video-gallery-page="digital" hidden>
+              <a class="video-card" href="https://www.bilibili.com/video/BV1WeMw6TEfF" target="_blank" rel="noopener noreferrer" aria-label="在 Bilibili 观看《自制免费HVPT日语学习网站》">
+                <span class="video-cover">
+                  <img src="./assets/video-BV1WeMw6TEfF.jpg" alt="《自制免费HVPT日语学习网站》视频封面">
+                  <span class="video-duration">03:01</span>
+                  <span class="video-play" aria-hidden="true"><i></i></span>
+                </span>
+                <span class="video-file-meta"><small>FILE 01 / WEB BUILD</small><em>WATCH ↗</em></span>
+                <strong>【自制免费HVPT日语学习网站】用图片联想和多角色声音训练 JLPT 词汇</strong>
+              </a>
+            </div>
+
+            <div class="video-gallery-grid" data-video-gallery-page="anime" hidden>
+              <a class="video-card" href="https://www.bilibili.com/video/BV1RnNczxEe8" target="_blank" rel="noopener noreferrer" aria-label="在 Bilibili 观看《VFX：亚托莉我挚爱的时光》">
+                <span class="video-cover">
+                  <img src="./assets/video-BV1RnNczxEe8.jpg" alt="《VFX：亚托莉我挚爱的时光》视频封面">
+                  <span class="video-duration">00:31</span>
+                  <span class="video-play" aria-hidden="true"><i></i></span>
+                </span>
+                <span class="video-file-meta"><small>FILE 01 / ANIME VFX</small><em>WATCH ↗</em></span>
+                <strong>【VFX】亚托莉我挚爱的时光</strong>
+              </a>
+
+              <a class="video-card" href="https://www.bilibili.com/video/BV1uFPYzTEkJ" target="_blank" rel="noopener noreferrer" aria-label="在 Bilibili 观看《VFX：路人女主的养成方式》">
+                <span class="video-cover">
+                  <img src="./assets/video-BV1uFPYzTEkJ.jpg" alt="《VFX：路人女主的养成方式》视频封面">
+                  <span class="video-duration">00:16</span>
+                  <span class="video-play" aria-hidden="true"><i></i></span>
+                </span>
+                <span class="video-file-meta"><small>FILE 02 / ANIME VFX</small><em>WATCH ↗</em></span>
+                <strong>【VFX】路人女主的养成方式</strong>
+              </a>
+            </div>
+          </section>
+        </div>
+
+        <div class="view-toast" id="view-toast" role="status" aria-live="polite"></div>
+
+        <footer class="home-footer">
+          <span>© <span id="current-year">2026</span> RIKKAzzz</span>
+          <span>WORLD LAYER / STABLE</span>
+        </footer>
+      </section>
+    </main>
+
+    <noscript><div class="noscript">这个演示需要启用 JavaScript。</div></noscript>
+  </body>
+</html>

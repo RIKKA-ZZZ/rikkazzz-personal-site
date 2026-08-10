@@ -1,0 +1,10 @@
+# Local source footage, AE projects, exports, and references
+/source-files/
+
+# Unused alternate intro export
+/assets/intro-1-enhanced.mp4
+
+# Operating-system metadata
+Thumbs.db
+Desktop.ini
+.DS_Store
