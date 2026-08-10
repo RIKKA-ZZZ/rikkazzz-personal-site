@@ -6190,16 +6190,8 @@ body[data-scene="world"] .sound-switch {
     min-height: 44px;
   }
 
-  body[data-performance="balanced"] .entry-scene::before {
-    animation-duration: 15s;
-  }
-
-  body[data-performance="balanced"] .entry-grid {
-    animation-duration: 22s;
-  }
-
-  body[data-performance="balanced"] .entry-particles i:nth-child(n + 5),
-  body[data-performance="balanced"] .spatial-depth-field i:nth-child(n + 4),
+  body[data-performance="balanced"] .spatial-depth-field,
+  body[data-performance="balanced"] .entry-particles i:nth-child(n + 4),
   body[data-performance="balanced"] .ambient-orbit-outer,
   body[data-performance="balanced"] .ambient-orbit-middle {
     display: none;
@@ -6208,9 +6200,21 @@ body[data-scene="world"] .sound-switch {
   body[data-performance="balanced"] .hud-glass,
   body[data-performance="balanced"] .sao-window,
   body[data-performance="balanced"] .video-gallery-window,
-  body[data-performance="balanced"] .video-card {
-    -webkit-backdrop-filter: blur(6px) saturate(1.02);
-    backdrop-filter: blur(6px) saturate(1.02);
+  body[data-performance="balanced"] .video-card,
+  body[data-performance="balanced"] .theme-switch,
+  body[data-performance="balanced"] .sound-switch,
+  body[data-performance="balanced"] .home-node-rail {
+    -webkit-backdrop-filter: blur(3px) saturate(1.01);
+    backdrop-filter: blur(3px) saturate(1.01);
+  }
+
+  body[data-performance="balanced"] .sao-window::before,
+  body[data-performance="balanced"] .identity-window::before,
+  body[data-performance="balanced"] .welcome-window::before,
+  body[data-performance="balanced"] .content-window::before,
+  body[data-performance="balanced"] .profile-window::before {
+    -webkit-backdrop-filter: blur(2px) saturate(0.96);
+    backdrop-filter: blur(2px) saturate(0.96);
   }
 
   body[data-performance="balanced"] .world-background,
@@ -6223,26 +6227,123 @@ body[data-scene="world"] .sound-switch {
   }
 
   body[data-performance="balanced"] .widget-performance::before,
-  body[data-performance="balanced"] .hud-widget::after {
-    animation: none;
+  body[data-performance="balanced"] .hud-widget::after,
+  body[data-performance="balanced"] .entry-scene::before,
+  body[data-performance="balanced"] .entry-grid,
+  body[data-performance="balanced"] .entry-orbit,
+  body[data-performance="balanced"] .entry-orbit::before,
+  body[data-performance="balanced"] .entry-orbit::after,
+  body[data-performance="balanced"] .entry-orbit-core,
+  body[data-performance="balanced"] .entry-brand i,
+  body[data-performance="balanced"] .entry-title::before,
+  body[data-performance="balanced"] .entry-title::after,
+  body[data-performance="balanced"] .entry-boundary-line i,
+  body[data-performance="balanced"] .entry-start::before,
+  body[data-performance="balanced"] .entry-particles i,
+  body[data-performance="balanced"] .hud-corners span,
+  body[data-performance="balanced"] .clock-ring,
+  body[data-performance="balanced"] .identity-seal,
+  body[data-performance="balanced"] .window-connector,
+  body[data-performance="balanced"] .status-pulse,
+  body[data-performance="balanced"] .node-button.is-active,
+  body[data-performance="balanced"] .home-node.is-active,
+  body[data-performance="balanced"] .window-tab,
+  body[data-performance="balanced"] .field-scan,
+  body[data-performance="balanced"] .welcome-emblem::before,
+  body[data-performance="balanced"] .welcome-emblem span,
+  body[data-performance="balanced"] .profile-emblem::before,
+  body[data-performance="balanced"] .profile-emblem span,
+  body[data-performance="balanced"] .mini-avatar,
+  body[data-performance="balanced"] .ambient-orbit-inner,
+  body[data-performance="balanced"] .ambient-pod,
+  body[data-performance="balanced"] .vitals-rank,
+  body[data-performance="balanced"] .vitals-meter i,
+  body[data-performance="balanced"] .sound-switch::after,
+  body[data-performance="balanced"] .sao-window::after,
+  body[data-performance="balanced"] .identity-window::after {
+    animation: none !important;
   }
 
+  body[data-performance="balanced"] .scene.is-materializing .world-header,
+  body[data-performance="balanced"] .scene.is-materializing .home-header,
+  body[data-performance="balanced"] .scene.is-materializing .identity-window,
+  body[data-performance="balanced"] .scene.is-materializing .world-note,
+  body[data-performance="balanced"] .scene.is-materializing .node-rail,
+  body[data-performance="balanced"] .scene.is-materializing .home-node-rail,
+  body[data-performance="balanced"] .scene.is-materializing .home-workspace,
+  body[data-performance="balanced"] .scene.is-materializing .player-vitals,
+  body[data-performance="balanced"] .scene.is-materializing .hud-widget,
+  body[data-performance="balanced"] .scene.is-materializing .hud-quick-actions {
+    --materialize-z: -18px;
+    filter: none !important;
+    clip-path: inset(0) !important;
+    transition: opacity 260ms ease, transform 320ms var(--ease) !important;
+    transition-delay: 0ms !important;
+  }
+
+  body[data-performance="balanced"] .world-scene.is-materializing.is-materialized .world-background,
   body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .world-background,
-  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .spatial-depth-field {
-    animation-duration: 720ms;
-  }
-
-  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .content-window,
-  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .profile-window {
-    animation-duration: 560ms;
-    animation-delay: 140ms;
-  }
-
+  body[data-performance="balanced"] .world-scene.is-materializing.is-materialized .world-header > *,
+  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .home-header > *,
+  body[data-performance="balanced"] .world-scene.is-materializing.is-materialized .identity-window > *,
+  body[data-performance="balanced"] .world-scene.is-materializing.is-materialized .node-button,
+  body[data-performance="balanced"] .world-scene.is-materializing.is-materialized .node-link,
+  body[data-performance="balanced"] .world-scene.is-materializing.is-materialized .world-note > *,
+  body[data-performance="balanced"] .world-scene.is-materializing.is-materialized .world-footer,
+  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .home-footer,
+  body[data-performance="balanced"] .world-scene.is-materializing.is-materialized .hud-widget,
+  body[data-performance="balanced"] .world-scene.is-materializing.is-materialized .hud-quick-actions,
   body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .content-view.is-active > *,
   body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .profile-window > *,
-  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .home-node {
-    animation-duration: 360ms;
-    animation-delay: 260ms;
+  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .home-node,
+  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .rail-stem,
+  body[data-performance="balanced"] .identity-composition.is-welcome .welcome-emblem,
+  body[data-performance="balanced"] .identity-composition.is-welcome .welcome-window > * {
+    animation: none !important;
+  }
+
+  body[data-performance="balanced"] .identity-composition.is-welcome .welcome-window,
+  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .content-window,
+  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .profile-window {
+    animation: mobile-lite-window-arrive 360ms var(--ease) both !important;
+  }
+
+  body[data-performance="balanced"] .content-view.is-active {
+    animation: mobile-lite-content-arrive 220ms ease-out both;
+  }
+
+  body[data-performance="balanced"] .is-activated {
+    animation: none !important;
+  }
+
+  body[data-performance="balanced"] .video-gallery-overlay.is-open .video-gallery-backdrop {
+    -webkit-backdrop-filter: blur(5px) brightness(0.84) saturate(0.9);
+    backdrop-filter: blur(5px) brightness(0.84) saturate(0.9);
+  }
+
+  body[data-performance="balanced"] .video-gallery-window {
+    filter: none;
+    clip-path: inset(0);
+    transition: opacity 240ms ease, transform 300ms var(--ease), box-shadow 200ms ease;
+  }
+
+  body[data-performance="balanced"] .video-card,
+  body[data-performance="balanced"] .video-gallery-overlay.is-open .video-card {
+    animation: none !important;
+  }
+
+  body[data-performance="balanced"] .ambient-pods {
+    display: none;
+  }
+
+  @keyframes mobile-lite-window-arrive {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes mobile-lite-content-arrive {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: none; }
   }
 }
 /* Main-world content panels use a straight four-sided silhouette. */

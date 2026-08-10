@@ -56,9 +56,9 @@
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const balancedPerformanceQuery = window.matchMedia('(max-width: 720px), (hover: none), (pointer: coarse)');
   const balancedPerformanceMode = balancedPerformanceQuery.matches;
-  const sceneFadeDuration = balancedPerformanceMode ? 520 : 920;
-  const sceneMaterializeDuration = balancedPerformanceMode ? 1200 : 2200;
-  const sceneFocusDelay = balancedPerformanceMode ? 680 : 1380;
+  const sceneFadeDuration = balancedPerformanceMode ? 380 : 920;
+  const sceneMaterializeDuration = balancedPerformanceMode ? 720 : 2200;
+  const sceneFocusDelay = balancedPerformanceMode ? 440 : 1380;
 
   body.dataset.performance = balancedPerformanceMode ? 'balanced' : 'full';
 
@@ -586,6 +586,8 @@
   }
 
   const renderHistory = [];
+  const renderSampleWindow = balancedPerformanceMode ? 360 : 750;
+  const renderSamplePause = balancedPerformanceMode ? 2400 : 0;
   let renderSampleStartedAt = performance.now();
   let previousFrameAt = null;
   let sampledFrameDuration = 0;
@@ -601,7 +603,7 @@
     }
     previousFrameAt = now;
 
-    if (now - renderSampleStartedAt >= 750) {
+    if (now - renderSampleStartedAt >= renderSampleWindow) {
       if (sampledFrameCount > 0 && document.visibilityState === 'visible') {
         const averageFrameTime = sampledFrameDuration / sampledFrameCount;
         const fps = 1000 / averageFrameTime;
@@ -627,6 +629,15 @@
       sampledFrameDuration = 0;
       sampledFrameCount = 0;
       renderSampleStartedAt = now;
+
+      if (renderSamplePause > 0) {
+        previousFrameAt = null;
+        window.setTimeout(() => {
+          renderSampleStartedAt = performance.now();
+          requestAnimationFrame(updateRenderTelemetry);
+        }, renderSamplePause);
+        return;
+      }
     }
 
     requestAnimationFrame(updateRenderTelemetry);
