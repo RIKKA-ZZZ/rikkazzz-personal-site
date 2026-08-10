@@ -56,9 +56,9 @@
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const balancedPerformanceQuery = window.matchMedia('(max-width: 720px), (hover: none), (pointer: coarse)');
   const balancedPerformanceMode = balancedPerformanceQuery.matches;
-  const sceneFadeDuration = 920;
-  const sceneMaterializeDuration = 2200;
-  const sceneFocusDelay = 1380;
+  const sceneFadeDuration = balancedPerformanceMode ? 520 : 920;
+  const sceneMaterializeDuration = balancedPerformanceMode ? 1200 : 2200;
+  const sceneFocusDelay = balancedPerformanceMode ? 680 : 1380;
 
   body.dataset.performance = balancedPerformanceMode ? 'balanced' : 'full';
 
@@ -141,6 +141,7 @@
   let introTransitionStarted = false;
   let introMediaRequested = false;
   let worldMediaRequested = false;
+  let enteringHome = false;
   let galleryRestoreFocus = null;
   let galleryCloseTimer;
   let gallerySettleTimer;
@@ -149,6 +150,26 @@
   try {
     soundEnabled = localStorage.getItem('nexus-sound-enabled') !== 'false';
   } catch {}
+
+  function readSessionValue(key) {
+    try {
+      return sessionStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  function writeSessionValue(key, value) {
+    try {
+      sessionStorage.setItem(key, value);
+    } catch {}
+  }
+
+  function removeSessionValue(key) {
+    try {
+      sessionStorage.removeItem(key);
+    } catch {}
+  }
 
   introScene.inert = true;
   worldScene.inert = true;
@@ -290,11 +311,50 @@
     });
   }
 
-  const storedDisplayName = sessionStorage.getItem('nexus-display-name');
+  const storedDisplayName = readSessionValue('nexus-display-name');
+  const storedScene = readSessionValue('nexus-scene');
   if (storedDisplayName) {
     identityInput.value = storedDisplayName;
     updateDisplayName(storedDisplayName);
   }
+
+  function restoreStoredScene() {
+    if (!storedDisplayName || !['welcome', 'home'].includes(storedScene)) return;
+
+    prepareWorldMedia();
+    entryScene.classList.remove('is-active', 'is-launching', 'is-dissolving');
+    entryScene.setAttribute('aria-hidden', 'true');
+    entryScene.inert = true;
+    introScene.classList.remove('is-active', 'is-playing', 'is-video-ready', 'is-underlay');
+    introScene.setAttribute('aria-hidden', 'true');
+    introScene.inert = true;
+    introFinished = true;
+    experienceStarting = true;
+
+    if (storedScene === 'home') {
+      worldScene.classList.remove('is-active', 'is-dissolving', 'is-materializing', 'is-materialized');
+      worldScene.setAttribute('aria-hidden', 'true');
+      worldScene.inert = true;
+      homeScene.classList.add('is-active', 'is-restored');
+      homeScene.setAttribute('aria-hidden', 'false');
+      homeScene.inert = false;
+      activeScene = 'home';
+      body.dataset.scene = 'home';
+      return;
+    }
+
+    worldScene.classList.add('is-active', 'is-restored');
+    worldScene.setAttribute('aria-hidden', 'false');
+    worldScene.inert = false;
+    identityForm.inert = true;
+    welcomeWindow.inert = false;
+    identityComposition.classList.add('is-welcome');
+    welcomeWindow.setAttribute('aria-hidden', 'false');
+    activeScene = 'world';
+    body.dataset.scene = 'world';
+  }
+
+  restoreStoredScene();
 
   document.getElementById('current-year').textContent = String(new Date().getFullYear());
 
@@ -834,7 +894,8 @@
     identityField.classList.remove('has-error');
     identityMessage.textContent = '';
     playSound('ready');
-    sessionStorage.setItem('nexus-display-name', displayName);
+    writeSessionValue('nexus-display-name', displayName);
+    writeSessionValue('nexus-scene', 'welcome');
     updateDisplayName(displayName);
     identityForm.inert = true;
     welcomeWindow.inert = false;
@@ -865,6 +926,10 @@
   });
 
   enterWorldButton.addEventListener('click', () => {
+    if (enteringHome) return;
+    enteringHome = true;
+    enterWorldButton.disabled = true;
+    writeSessionValue('nexus-scene', 'home');
     playSound('launch');
     const nodes = [...identityComposition.querySelectorAll('.node-button')];
     nodes.forEach((node, index) => node.classList.toggle('is-active', index === 2));
@@ -877,7 +942,8 @@
   restartButton.addEventListener('click', () => {
     playSound('dismiss');
     restartButton.disabled = true;
-    sessionStorage.removeItem('nexus-display-name');
+    removeSessionValue('nexus-display-name');
+    removeSessionValue('nexus-scene');
     window.setTimeout(() => window.location.reload(), soundEnabled ? 480 : 0);
   });
 

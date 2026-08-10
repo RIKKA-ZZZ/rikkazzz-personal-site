@@ -5021,8 +5021,14 @@ body[data-scene="entry"] .sound-switch {
   }
 
   .entry-title {
-    font-size: clamp(3.1rem, 16.5vw, 5.4rem);
-    letter-spacing: 0.025em;
+    width: 100%;
+    font-size: clamp(2.35rem, 13.8vw, 4.8rem);
+    letter-spacing: 0;
+  }
+
+  .entry-title span,
+  .entry-title em {
+    flex: 0 0 auto;
   }
 
   .entry-boundary-line {
@@ -5032,7 +5038,7 @@ body[data-scene="entry"] .sound-switch {
 
   .entry-description {
     max-width: 320px;
-    font-size: 0.72rem;
+    font-size: 0.76rem;
     letter-spacing: 0.07em;
     line-height: 1.75;
   }
@@ -6219,6 +6225,24 @@ body[data-scene="world"] .sound-switch {
   body[data-performance="balanced"] .widget-performance::before,
   body[data-performance="balanced"] .hud-widget::after {
     animation: none;
+  }
+
+  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .world-background,
+  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .spatial-depth-field {
+    animation-duration: 720ms;
+  }
+
+  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .content-window,
+  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .profile-window {
+    animation-duration: 560ms;
+    animation-delay: 140ms;
+  }
+
+  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .content-view.is-active > *,
+  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .profile-window > *,
+  body[data-performance="balanced"] .home-scene.is-materializing.is-materialized .home-node {
+    animation-duration: 360ms;
+    animation-delay: 260ms;
   }
 }
 /* Main-world content panels use a straight four-sided silhouette. */
