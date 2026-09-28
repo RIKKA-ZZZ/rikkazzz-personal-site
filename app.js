@@ -54,6 +54,7 @@
     return targets;
   }, {});
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const mobileSceneQuery = window.matchMedia('(max-width: 720px), (max-width: 1180px) and (pointer: coarse)');
   const balancedPerformanceQuery = window.matchMedia('(max-width: 720px), (hover: none), (pointer: coarse)');
   const balancedPerformanceMode = balancedPerformanceQuery.matches;
   const sceneFadeDuration = balancedPerformanceMode ? 380 : 920;
@@ -385,7 +386,7 @@
 
   function setMetric(name, value) {
     (metricTargets[name] || []).forEach((target) => {
-      target.textContent = value;
+      if (target.textContent !== value) target.textContent = value;
     });
   }
 
@@ -586,15 +587,76 @@
   }
 
   const renderHistory = [];
-  const renderSampleWindow = balancedPerformanceMode ? 360 : 750;
-  const renderSamplePause = balancedPerformanceMode ? 2400 : 0;
-  let renderSampleStartedAt = performance.now();
+  const renderSampleWindow = balancedPerformanceMode ? 360 : 500;
+  const renderSamplePause = balancedPerformanceMode ? 3000 : 2500;
+  let renderSampleStartedAt = 0;
   let previousFrameAt = null;
   let sampledFrameDuration = 0;
   let sampledFrameCount = 0;
+  let renderTelemetryFrame = 0;
+  let renderTelemetryResumeTimer = 0;
+
+  function canSampleRenderTelemetry() {
+    return !mobileSceneQuery.matches && document.visibilityState === 'visible'
+      && body.dataset.scene === 'world'
+      && worldScene.getAttribute('aria-hidden') !== 'true';
+  }
+
+  function resetRenderSample() {
+    renderSampleStartedAt = 0;
+    previousFrameAt = null;
+    sampledFrameDuration = 0;
+    sampledFrameCount = 0;
+  }
+
+  function stopRenderTelemetry() {
+    if (renderTelemetryFrame) {
+      window.cancelAnimationFrame(renderTelemetryFrame);
+      renderTelemetryFrame = 0;
+    }
+    if (renderTelemetryResumeTimer) {
+      window.clearTimeout(renderTelemetryResumeTimer);
+      renderTelemetryResumeTimer = 0;
+    }
+    resetRenderSample();
+  }
+
+  function beginRenderSample() {
+    if (!canSampleRenderTelemetry() || renderTelemetryFrame) return;
+    renderSampleStartedAt = performance.now();
+    previousFrameAt = null;
+    sampledFrameDuration = 0;
+    sampledFrameCount = 0;
+    renderTelemetryFrame = window.requestAnimationFrame(updateRenderTelemetry);
+  }
+
+  function scheduleNextRenderSample() {
+    if (!canSampleRenderTelemetry()) {
+      stopRenderTelemetry();
+      return;
+    }
+    renderTelemetryResumeTimer = window.setTimeout(() => {
+      renderTelemetryResumeTimer = 0;
+      beginRenderSample();
+    }, renderSamplePause);
+  }
+
+  function syncRenderTelemetry() {
+    if (!canSampleRenderTelemetry()) {
+      stopRenderTelemetry();
+      return;
+    }
+    if (!renderTelemetryFrame && !renderTelemetryResumeTimer) beginRenderSample();
+  }
 
   function updateRenderTelemetry(now) {
-    if (previousFrameAt !== null && document.visibilityState === 'visible') {
+    renderTelemetryFrame = 0;
+    if (!canSampleRenderTelemetry()) {
+      resetRenderSample();
+      return;
+    }
+
+    if (previousFrameAt !== null) {
       const frameDuration = now - previousFrameAt;
       if (frameDuration > 0 && frameDuration < 250) {
         sampledFrameDuration += frameDuration;
@@ -604,7 +666,7 @@
     previousFrameAt = now;
 
     if (now - renderSampleStartedAt >= renderSampleWindow) {
-      if (sampledFrameCount > 0 && document.visibilityState === 'visible') {
+      if (sampledFrameCount > 0) {
         const averageFrameTime = sampledFrameDuration / sampledFrameCount;
         const fps = 1000 / averageFrameTime;
         const frameBudget = Math.min(999, (averageFrameTime / (1000 / 60)) * 100);
@@ -626,21 +688,12 @@
         setRing('heap', 0, 'N/A', false);
       }
 
-      sampledFrameDuration = 0;
-      sampledFrameCount = 0;
-      renderSampleStartedAt = now;
-
-      if (renderSamplePause > 0) {
-        previousFrameAt = null;
-        window.setTimeout(() => {
-          renderSampleStartedAt = performance.now();
-          requestAnimationFrame(updateRenderTelemetry);
-        }, renderSamplePause);
-        return;
-      }
+      resetRenderSample();
+      scheduleNextRenderSample();
+      return;
     }
 
-    requestAnimationFrame(updateRenderTelemetry);
+    renderTelemetryFrame = window.requestAnimationFrame(updateRenderTelemetry);
   }
 
   function updateSessionTelemetry() {
@@ -653,24 +706,23 @@
   }
 
   document.addEventListener('visibilitychange', () => {
-    previousFrameAt = null;
-    renderSampleStartedAt = performance.now();
-    sampledFrameDuration = 0;
-    sampledFrameCount = 0;
+    syncRenderTelemetry();
     updateSessionTelemetry();
   });
 
   initializeVisitorTelemetry();
   updateSessionTelemetry();
-  window.setInterval(updateSessionTelemetry, 1000);
-  window.setInterval(updateNetworkMetrics, 5000);
-  requestAnimationFrame(updateRenderTelemetry);
+  window.setInterval(() => { if (canSampleRenderTelemetry()) updateSessionTelemetry(); }, 1000);
+  window.setInterval(() => { if (canSampleRenderTelemetry()) updateNetworkMetrics(); }, 5000);
+  syncRenderTelemetry();
+  mobileSceneQuery.addEventListener('change', syncRenderTelemetry);
 
   function revealScene(nextScene, nextName, currentScene) {
     nextScene.inert = false;
     nextScene.classList.add('is-active', 'is-underlay', 'is-materializing');
     nextScene.setAttribute('aria-hidden', 'false');
     body.dataset.scene = nextName;
+    syncRenderTelemetry();
     playSceneArrivalSounds(nextName);
 
     requestAnimationFrame(() => {
@@ -787,7 +839,7 @@
     entryScene.classList.add('is-launching');
     prepareWorldMedia();
 
-    if (reducedMotion.matches) {
+    if (reducedMotion.matches || mobileSceneQuery.matches) {
       revealScene(worldScene, 'world', entryScene);
       window.setTimeout(() => identityInput.focus({ preventScroll: true }), 0);
       return;
@@ -1153,142 +1205,279 @@
     });
   });
 
-  if (!reducedMotion.matches) {
+  // Keep moving light separate from the clipped, filtered glass material.
+  document.querySelectorAll('.hud-glass, .sao-window').forEach((surface) => {
+    if (surface.classList.contains('world-note')) return;
+    const scan = document.createElement('span');
+    scan.className = 'surface-scan';
+    scan.setAttribute('aria-hidden', 'true');
+    surface.append(scan);
+  });
+  document.querySelectorAll('.clock-ring').forEach((clock) => {
+    const halo = document.createElement('i');
+    halo.className = 'clock-halo';
+    halo.setAttribute('aria-hidden', 'true');
+    clock.append(halo);
+  });
+
+  {
     const spatialSurfaces = [...document.querySelectorAll(
       '.identity-window, .welcome-window, .world-note, .content-window, .profile-window, .video-gallery-window, .video-card, .world-header, .home-header, .player-vitals, .hud-widget',
     )];
-    let lastSpatialPointerMoveAt = performance.now();
+    const controlSelector = '.entry-start, .confirm-button, .enter-world-button, .node-button, .home-node, .hud-quick-button, .memory-list button, .project-list article, .video-card, .video-gallery-close, .archive-space-link, .user-chip, .theme-switch, .sound-switch';
+    const scenes = [entryScene, introScene, worldScene, homeScene];
+    const depthLayers = new Map(scenes.map((scene) => [scene, [...scene.querySelectorAll('[data-depth]')].map((element) => ({ element, depth: Number(element.dataset.depth || 0) }))]));
+    const surfaceSet = new Set(spatialSurfaces);
+    const floatRecords = spatialSurfaces.map((surface, index) => ({ surface, index, animations: [], frames: null }));
+    const pendingSurfaces = new Map();
+    const pendingControls = new Map();
+    let currentScene = scenes.find((scene) => scene.classList.contains('is-active'));
+    let pointerFrame = 0;
+    let pointerPosition = null;
+    let idleTimer = 0;
+    let syncTimer = 0;
+    let lastPointerAt = 0;
 
-    const idleFloatSurfaces = spatialSurfaces.map((surface, index) => ({
-      surface,
-      phase: index * 1.37,
-      speed: 0.00056 + (index % 3) * 0.000045,
-      amplitudeX: 2 + (index % 3) * 0.6,
-      amplitudeY: 3.1 + ((index + 1) % 3) * 0.82,
-      amplitudeZ: 2.8 + (index % 2) * 1.4,
-      amplitudeRx: 0.31 + (index % 3) * 0.1,
-      amplitudeRy: 0.46 + ((index + 1) % 3) * 0.13,
-      strength: 0,
-    }));
+    const neutralTransform = 'translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg)';
+    const floatDuration = 120000;
 
-    let lastIdleFloatFrame = performance.now();
-
-    function updateIdleFloat(now) {
-      if (now - lastIdleFloatFrame < 30) {
-        requestAnimationFrame(updateIdleFloat);
-        return;
+    function floatTransform(index, progress, quality) {
+      const phase = index * 1.37;
+      const speed = 0.00056 + (index % 3) * 0.000045;
+      // Whole cycles give a seamless loop; sampling retains the slow original path.
+      const wave = (rate, offset) => Math.sin(progress * Math.PI * 2 * Math.round(speed * rate * floatDuration / (Math.PI * 2)) + offset);
+      const x = wave(1, phase) * (2 + (index % 3) * 0.6);
+      const y = wave(0.73, phase * 1.61) * (3.1 + ((index + 1) % 3) * 0.82);
+      const z = wave(0.47, phase * 0.82) * (2.8 + (index % 2) * 1.4);
+      const rx = wave(0.68, phase * 1.19) * (0.31 + (index % 3) * 0.1);
+      const ry = wave(0.57, phase * 0.91 + Math.PI / 2) * (0.46 + ((index + 1) % 3) * 0.13);
+      if (quality !== 'full') {
+        const strength = quality === 'eco' ? 0.35 : 0.7;
+        return `translate3d(${(x * strength).toFixed(3)}px, ${(y * strength).toFixed(3)}px, 0px)`;
       }
-
-      const elapsed = Math.min(80, now - lastIdleFloatFrame);
-      lastIdleFloatFrame = now;
-      const activeSceneElement = document.querySelector('.scene.is-active:not(.is-dissolving)');
-      const pointerIsIdle = now - lastSpatialPointerMoveAt > 440;
-      const sceneIsSettled = activeSceneElement && !activeSceneElement.classList.contains('is-materializing');
-      const blend = 1 - Math.exp(-elapsed / 340);
-
-      idleFloatSurfaces.forEach((floatSurface) => {
-        const { surface } = floatSurface;
-        const shouldFloat = Boolean(pointerIsIdle && sceneIsSettled && activeSceneElement.contains(surface));
-        const targetStrength = shouldFloat ? 1 : 0;
-        floatSurface.strength += (targetStrength - floatSurface.strength) * blend;
-
-        const wave = now * floatSurface.speed;
-        const strength = floatSurface.strength;
-        const x = Math.sin(wave + floatSurface.phase) * floatSurface.amplitudeX * strength;
-        const y = Math.sin(wave * 0.73 + floatSurface.phase * 1.61) * floatSurface.amplitudeY * strength;
-        const z = Math.sin(wave * 0.47 + floatSurface.phase * 0.82) * floatSurface.amplitudeZ * strength;
-        const rx = Math.sin(wave * 0.68 + floatSurface.phase * 1.19) * floatSurface.amplitudeRx * strength;
-        const ry = Math.cos(wave * 0.57 + floatSurface.phase * 0.91) * floatSurface.amplitudeRy * strength;
-
-        surface.style.setProperty('--idle-x', `${x.toFixed(2)}px`);
-        surface.style.setProperty('--idle-y', `${y.toFixed(2)}px`);
-        surface.style.setProperty('--idle-z', `${z.toFixed(2)}px`);
-        surface.style.setProperty('--idle-rx', `${rx.toFixed(3)}deg`);
-        surface.style.setProperty('--idle-ry', `${ry.toFixed(3)}deg`);
-      });
-
-      requestAnimationFrame(updateIdleFloat);
+      return `translate3d(${x.toFixed(3)}px, ${y.toFixed(3)}px, ${z.toFixed(3)}px) rotateX(${rx.toFixed(4)}deg) rotateY(${ry.toFixed(4)}deg)`;
     }
 
-    if (!balancedPerformanceMode) requestAnimationFrame(updateIdleFloat);
+    function stopFloats(smooth = false) {
+      const running = floatRecords.filter((record) => record.animations.length && !record.surface.closest('.effects-occluded, .effects-offscreen'));
+      // Read in one batch, cancel, then read the underlying transforms in one batch.
+      const visible = smooth ? running.map(({ surface }) => getComputedStyle(surface).transform) : [];
+      running.forEach((record) => {
+        record.animations.forEach((animation) => animation.cancel());
+        record.animations = [];
+      });
+      if (!smooth) return;
+      const bases = running.map(({ surface }) => getComputedStyle(surface).transform);
+      running.forEach((record, index) => {
+        const matrix = (value) => new DOMMatrix(value === 'none' ? undefined : value);
+        const offset = matrix(bases[index]).inverse().multiply(matrix(visible[index]));
+        const settle = record.surface.animate(
+          [{ transform: offset.toString() }, { transform: neutralTransform }],
+          { duration: 340, easing: 'ease-out', composite: 'add' },
+        );
+        settle.id = 'spatial-settle';
+        record.animations = [settle];
+        settle.onfinish = () => { if (record.animations[0] === settle) record.animations = []; };
+      });
+    }
+
+    function startFloats() {
+      idleTimer = 0;
+      if (document.hidden || reducedMotion.matches || balancedPerformanceQuery.matches || !currentScene || currentScene.classList.contains('is-materializing')) return;
+      floatRecords.forEach((record) => {
+        const { surface, index } = record;
+        if (!currentScene.contains(surface) || surface.closest('[hidden], .effects-occluded, .effects-offscreen')) return;
+        if (record.animations.some((animation) => animation.playState === 'running')) return;
+        const style = getComputedStyle(surface);
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return;
+        if (!surface.getClientRects().length) return;
+        record.animations.forEach((animation) => animation.cancel());
+        const quality = body.dataset.quality || 'full';
+        if (!record.frames || record.quality !== quality) {
+          record.frames = Array.from({ length: 481 }, (_, step) => ({ transform: floatTransform(index, step / 480, quality), offset: step / 480 }));
+          record.quality = quality;
+        }
+        const base = getComputedStyle(surface).transform;
+        const prefix = base === 'none' ? '' : `${base} `;
+        const frames = record.frames.map((frame) => ({ ...frame, transform: prefix + frame.transform }));
+        // Concrete transforms can run on the compositor. Animating inherited CSS
+        // variables or additive transforms still causes per-frame style work.
+        const arrive = surface.animate(
+          [{ transform: prefix + neutralTransform }, { transform: frames[0].transform }],
+          { duration: 340, easing: 'ease-out', fill: 'forwards' },
+        );
+        arrive.id = 'spatial-arrive';
+        record.animations = [arrive];
+        arrive.onfinish = () => {
+          if (record.animations[0] !== arrive) return;
+          const drift = surface.animate(frames, { duration: floatDuration, iterations: Infinity, easing: 'linear' });
+          drift.id = 'spatial-drift';
+          arrive.cancel();
+          record.animations = [drift];
+        };
+      });
+    }
+
+    function scheduleFloat() {
+      clearTimeout(idleTimer);
+      if (!document.hidden && !reducedMotion.matches && !balancedPerformanceQuery.matches) {
+        idleTimer = window.setTimeout(startFloats, Math.max(440 - (performance.now() - lastPointerAt), 0));
+      }
+    }
+
+    function syncFloatVisibility() {
+      floatRecords.forEach((record) => {
+        const blocked = document.hidden || Boolean(record.surface.closest('.effects-occluded, .effects-offscreen'));
+        if (blocked) {
+          record.animations.forEach((animation) => animation.pause());
+          record.visibilityPaused = true;
+        } else if (record.visibilityPaused) {
+          record.visibilityPaused = false;
+          if (reducedMotion.matches || balancedPerformanceQuery.matches || record.quality !== (body.dataset.quality || 'full')) {
+            record.animations.forEach((animation) => animation.cancel());
+            record.animations = [];
+          } else record.animations.forEach((animation) => animation.play());
+        }
+      });
+      scheduleFloat();
+    }
+
+    function syncEffects() {
+      syncTimer = 0;
+      currentScene = scenes.find((scene) => scene.classList.contains('is-active') && !scene.classList.contains('is-dissolving'));
+      body.classList.toggle('effects-paused', document.hidden);
+      syncFloatVisibility();
+      stopFloats();
+      scheduleFloat();
+      if (document.hidden || reducedMotion.matches) {
+        cancelAnimationFrame(pointerFrame);
+        pointerFrame = 0;
+        pointerPosition = null;
+        pendingSurfaces.clear();
+        pendingControls.clear();
+      }
+    }
+
+    // Observe lifecycle changes only, never the style attributes animated below.
+    const lifecycleObserver = new MutationObserver(() => {
+      if (!syncTimer) syncTimer = window.setTimeout(syncEffects, 0);
+    });
+    [...scenes, identityComposition, videoGallery, ...videoGalleryPages].forEach((element) => {
+      lifecycleObserver.observe(element, { attributes: true, attributeFilter: ['class', 'hidden', 'aria-hidden'] });
+    });
+    document.addEventListener('visibilitychange', syncEffects);
+    window.addEventListener('site-effectsvisibility', syncFloatVisibility);
+    window.addEventListener('site-qualitychange', syncEffects);
+    reducedMotion.addEventListener('change', syncEffects);
+    balancedPerformanceQuery.addEventListener('change', syncEffects);
+    window.addEventListener('resize', () => {
+      if (!syncTimer) syncTimer = window.setTimeout(syncEffects, 80);
+    }, { passive: true });
+    const sizeObserver = new ResizeObserver(() => {
+      if (!syncTimer) syncTimer = window.setTimeout(syncEffects, 0);
+    });
+    spatialSurfaces.forEach((surface) => sizeObserver.observe(surface));
+
+    function flushPointer() {
+      pointerFrame = 0;
+      if (document.hidden || reducedMotion.matches) return;
+      // All geometry reads precede writes, including nested cards and their panels.
+      const surfaces = [...pendingSurfaces].map(([surface, point]) => ({ surface, point, bounds: surface.getBoundingClientRect() }));
+      const controls = [...pendingControls].map(([control, point]) => ({ control, point, bounds: control.getBoundingClientRect() }));
+      pendingSurfaces.clear();
+      pendingControls.clear();
+      if (pointerPosition && currentScene && !(currentScene === homeScene && !videoGallery.hidden)) {
+        const x = (pointerPosition.x / window.innerWidth - 0.5) * 2;
+        const y = (pointerPosition.y / window.innerHeight - 0.5) * 2;
+        currentScene.style.setProperty('--cursor-x', `${((x + 1) * 50).toFixed(2)}%`);
+        currentScene.style.setProperty('--cursor-y', `${((y + 1) * 50).toFixed(2)}%`);
+        currentScene.style.setProperty('--scene-rx', `${(-y * 1.2).toFixed(2)}deg`);
+        currentScene.style.setProperty('--scene-ry', `${(x * 1.6).toFixed(2)}deg`);
+        depthLayers.get(currentScene)?.forEach(({ element, depth }) => {
+          if (element.closest('.effects-occluded')) return;
+          element.style.setProperty('--shift-x', `${(x * depth * 30).toFixed(2)}px`);
+          element.style.setProperty('--shift-y', `${(y * depth * 20).toFixed(2)}px`);
+          element.style.setProperty('--depth-z', `${(depth * 55).toFixed(2)}px`);
+        });
+        pointerPosition = null;
+      }
+      pointerPosition = null;
+      surfaces.forEach(({ surface, point, bounds }) => {
+        if (!bounds.width || !bounds.height) return;
+        const x = (point.x - bounds.left) / bounds.width;
+        const y = (point.y - bounds.top) / bounds.height;
+        surface.classList.add('is-pointer-active');
+        surface.style.setProperty('--surface-rx', `${(-(y - 0.5) * 2 * 3.2).toFixed(2)}deg`);
+        surface.style.setProperty('--surface-ry', `${((x - 0.5) * 2 * 4.4).toFixed(2)}deg`);
+        surface.style.setProperty('--glow-x', `${(x * 100).toFixed(1)}%`);
+        surface.style.setProperty('--glow-y', `${(y * 100).toFixed(1)}%`);
+      });
+      controls.forEach(({ control, point, bounds }) => {
+        if (!bounds.width || !bounds.height) return;
+        control.style.setProperty('--control-x', `${((point.x - bounds.left) / bounds.width * 100).toFixed(1)}%`);
+        control.style.setProperty('--control-y', `${((point.y - bounds.top) / bounds.height * 100).toFixed(1)}%`);
+      });
+    }
 
     app.addEventListener('pointermove', (event) => {
-      if (event.pointerType === 'touch') return;
-      lastSpatialPointerMoveAt = performance.now();
-      const x = (event.clientX / window.innerWidth - 0.5) * 2;
-      const y = (event.clientY / window.innerHeight - 0.5) * 2;
-      const activeSceneElement = document.querySelector('.scene.is-active:not(.is-dissolving)');
-      activeSceneElement?.style.setProperty('--cursor-x', `${((x + 1) * 50).toFixed(2)}%`);
-      activeSceneElement?.style.setProperty('--cursor-y', `${((y + 1) * 50).toFixed(2)}%`);
-      activeSceneElement?.style.setProperty('--scene-rx', `${(-y * 1.2).toFixed(2)}deg`);
-      activeSceneElement?.style.setProperty('--scene-ry', `${(x * 1.6).toFixed(2)}deg`);
+      if (event.pointerType === 'touch' || reducedMotion.matches || mobileSceneQuery.matches) return;
+      const wasIdle = performance.now() - lastPointerAt > 440;
+      lastPointerAt = performance.now();
+      if (wasIdle) stopFloats(true);
+      scheduleFloat();
+      const point = { x: event.clientX, y: event.clientY };
+      pointerPosition = point;
+      for (let element = event.target; element && element !== app; element = element.parentElement) {
+        if (element.closest('.effects-occluded, .effects-offscreen')) continue;
+        if (surfaceSet.has(element)) pendingSurfaces.set(element, point);
+        if (element.matches?.(controlSelector)) pendingControls.set(element, point);
+      }
+      if (!pointerFrame) pointerFrame = requestAnimationFrame(flushPointer);
+    }, { passive: true });
 
-      activeSceneElement?.querySelectorAll('[data-depth]').forEach((layer) => {
-        const depth = Number(layer.dataset.depth || 0);
-        layer.style.setProperty('--shift-x', `${(x * depth * 30).toFixed(2)}px`);
-        layer.style.setProperty('--shift-y', `${(y * depth * 20).toFixed(2)}px`);
-        layer.style.setProperty('--depth-z', `${(depth * 55).toFixed(2)}px`);
-      });
-    });
+    spatialSurfaces.forEach((surface) => surface.addEventListener('pointerleave', () => {
+      pendingSurfaces.delete(surface);
+      surface.classList.remove('is-pointer-active');
+      surface.style.setProperty('--surface-rx', '0deg');
+      surface.style.setProperty('--surface-ry', '0deg');
+      surface.style.setProperty('--glow-x', '50%');
+      surface.style.setProperty('--glow-y', '50%');
+    }));
 
     app.addEventListener('pointerleave', () => {
-      lastSpatialPointerMoveAt = performance.now();
-      document.querySelectorAll('.scene').forEach((scene) => {
+      cancelAnimationFrame(pointerFrame);
+      pointerFrame = 0;
+      pointerPosition = null;
+      pendingSurfaces.clear();
+      pendingControls.clear();
+      scenes.forEach((scene) => {
+        if (scene === homeScene && !videoGallery.hidden) return;
         scene.style.setProperty('--cursor-x', '50%');
         scene.style.setProperty('--cursor-y', '50%');
         scene.style.setProperty('--scene-rx', '0deg');
         scene.style.setProperty('--scene-ry', '0deg');
       });
-      document.querySelectorAll('[data-depth]').forEach((layer) => {
-        layer.style.setProperty('--shift-x', '0px');
-        layer.style.setProperty('--shift-y', '0px');
-        layer.style.setProperty('--depth-z', '0px');
-      });
+      depthLayers.forEach((layers) => layers.forEach(({ element }) => {
+        if (element.closest('.effects-occluded')) return;
+        element.style.setProperty('--shift-x', '0px');
+        element.style.setProperty('--shift-y', '0px');
+        element.style.setProperty('--depth-z', '0px');
+      }));
+      lastPointerAt = performance.now();
+      scheduleFloat();
     });
 
-    spatialSurfaces.forEach((surface) => {
-      surface.addEventListener('pointermove', (event) => {
-        if (event.pointerType === 'touch') return;
-        const bounds = surface.getBoundingClientRect();
-        const localX = (event.clientX - bounds.left) / bounds.width;
-        const localY = (event.clientY - bounds.top) / bounds.height;
-        const normalizedX = (localX - 0.5) * 2;
-        const normalizedY = (localY - 0.5) * 2;
-        surface.classList.add('is-pointer-active');
-        surface.style.setProperty('--surface-rx', `${(-normalizedY * 3.2).toFixed(2)}deg`);
-        surface.style.setProperty('--surface-ry', `${(normalizedX * 4.4).toFixed(2)}deg`);
-        surface.style.setProperty('--glow-x', `${(localX * 100).toFixed(1)}%`);
-        surface.style.setProperty('--glow-y', `${(localY * 100).toFixed(1)}%`);
-      });
-
-      surface.addEventListener('pointerleave', () => {
-        surface.classList.remove('is-pointer-active');
-        surface.style.setProperty('--surface-rx', '0deg');
-        surface.style.setProperty('--surface-ry', '0deg');
-        surface.style.setProperty('--glow-x', '50%');
-        surface.style.setProperty('--glow-y', '50%');
-      });
+    app.addEventListener('pointerdown', (event) => {
+      if (reducedMotion.matches || mobileSceneQuery.matches) return;
+      const control = event.target.closest(controlSelector);
+      if (!control) return;
+      control.classList.remove('is-activated');
+      requestAnimationFrame(() => control.classList.add('is-activated'));
+      window.setTimeout(() => control.classList.remove('is-activated'), 520);
     });
-
-    const reactiveControls = document.querySelectorAll(
-      '.entry-start, .confirm-button, .enter-world-button, .node-button, .home-node, .hud-quick-button, .memory-list button, .project-list article, .video-card, .video-gallery-close, .archive-space-link, .user-chip, .theme-switch, .sound-switch',
-    );
-
-    reactiveControls.forEach((control) => {
-      control.addEventListener('pointermove', (event) => {
-        if (event.pointerType === 'touch') return;
-        const bounds = control.getBoundingClientRect();
-        control.style.setProperty('--control-x', `${(((event.clientX - bounds.left) / bounds.width) * 100).toFixed(1)}%`);
-        control.style.setProperty('--control-y', `${(((event.clientY - bounds.top) / bounds.height) * 100).toFixed(1)}%`);
-      });
-
-      control.addEventListener('pointerdown', () => {
-        control.classList.remove('is-activated');
-        requestAnimationFrame(() => control.classList.add('is-activated'));
-        window.setTimeout(() => control.classList.remove('is-activated'), 520);
-      });
-    });
+    syncEffects();
   }
+
 
   reducedMotion.addEventListener?.('change', () => {
     if (reducedMotion.matches && activeScene === 'intro') {

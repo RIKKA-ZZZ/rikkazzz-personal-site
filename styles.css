@@ -197,6 +197,11 @@ input:focus-visible {
   opacity: 0;
 }
 
+/* Remove completed scenes from the render tree so their effects stop consuming GPU time. */
+.scene[aria-hidden="true"] {
+  display: none;
+}
+
 .intro-scene {
   z-index: 20;
   overflow: hidden;
@@ -6352,4 +6357,283 @@ body[data-scene="world"] .sound-switch {
 .home-scene .video-gallery-window::before {
   -webkit-clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+}
+
+
+/* Keep decorative motion, but rasterize glass and glow independently of it. */
+.surface-scan { display: none; }
+
+@media (min-width: 721px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .hud-glass::before,
+  .sao-window::before {
+    animation: none;
+    background-size: 100% 100%;
+    background-position: center;
+  }
+  .hud-glass::before {
+    background-image:
+      radial-gradient(circle at var(--glow-x) var(--glow-y), var(--surface-glow), transparent 28%),
+      var(--panel-background);
+  }
+  .sao-window::before {
+    background-image:
+      radial-gradient(circle at var(--glow-x) var(--glow-y), var(--surface-glow), transparent 26%),
+      var(--panel-background-strong);
+  }
+  .identity-window::before {
+    background-image:
+      radial-gradient(circle at var(--glow-x) var(--glow-y), rgba(84, 215, 244, 0.13), transparent 31%),
+      repeating-linear-gradient(0deg, transparent 0 18px, var(--identity-film-line) 19px, transparent 20px),
+      var(--identity-surface);
+  }
+  .world-note::before {
+    background-image:
+      radial-gradient(circle at var(--glow-x) var(--glow-y), rgba(78, 209, 239, 0.14), transparent 34%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent 23%),
+      var(--note-surface);
+  }
+  .hud-glass > .surface-scan,
+  .sao-window > .surface-scan {
+    --scan-width: 230%;
+    --scan-start: -81.956522%;
+    --scan-duration: 7.2s;
+    --scan-image: linear-gradient(112deg, transparent 28%, var(--surface-glint) 47%, transparent 61%);
+    display: block;
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    overflow: hidden;
+    clip-path: url("#sao-panel-clip");
+    pointer-events: none;
+  }
+  .hud-glass > .surface-scan {
+    --scan-image: linear-gradient(108deg, transparent 30%, var(--surface-glint) 48%, transparent 62%);
+  }
+  .world-header > .surface-scan,
+  .home-header > .surface-scan { clip-path: url("#sao-hud-clip"); }
+  .identity-window > .surface-scan,
+  .welcome-window > .surface-scan { clip-path: url("#sao-main-clip"); }
+  .identity-window > .surface-scan {
+    --scan-width: 245%;
+    --scan-start: -88.77551%;
+    --scan-duration: 9.2s;
+    --scan-image: linear-gradient(108deg, transparent 27%, rgba(255, 255, 255, 0.19) 47%, rgba(152, 226, 243, 0.08) 52%, transparent 66%);
+  }
+  .surface-scan::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--scan-width);
+    background: var(--scan-image);
+    animation: surface-light-pass var(--scan-duration) linear infinite;
+  }
+
+  /* Static halo textures crossfade, retaining the original pulse periods. */
+  .node-button.is-active,
+  .home-node.is-active,
+  .mini-avatar { animation: none; }
+  .node-button.is-active::after,
+  .home-node.is-active::after,
+  .mini-avatar::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    box-shadow: -6px 0 21px var(--prism-shadow-a), 6px 0 21px var(--prism-shadow-b);
+    pointer-events: none;
+    animation: halo-breathe 2.7s ease-in-out infinite;
+  }
+  .mini-avatar { position: relative; overflow: visible; }
+  .mini-avatar img { border-radius: inherit; }
+  .mini-avatar::after { animation-duration: 4.8s; }
+
+  .status-pulse,
+  .live-dot::before {
+    box-shadow: 0 0 12px var(--health), -2px 0 7px var(--prism-shadow-a), 2px 0 7px var(--prism-shadow-b);
+    animation-name: status-composite-breathe;
+  }
+  .clock-ring {
+    position: relative;
+    animation: none;
+    box-shadow: -2px 0 5px var(--prism-shadow-a), 2px 0 5px var(--prism-shadow-b);
+  }
+  .clock-ring > .clock-halo {
+    position: absolute;
+    inset: -1px;
+    border: 1px solid var(--prism-cyan);
+    border-radius: inherit;
+    box-shadow: -3px 0 10px var(--prism-shadow-a), 3px 0 10px var(--prism-shadow-b);
+    animation: halo-breathe 5s ease-in-out infinite;
+  }
+  .window-tab { animation: none; }
+  .window-tab::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 -2px;
+    width: 2px;
+    background: var(--prism-cyan);
+    box-shadow: 2px 0 5px var(--prism-shadow-b);
+    animation: halo-breathe 4.4s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .window-connector {
+    filter: drop-shadow(-5px 0 8px var(--prism-shadow-a)) drop-shadow(5px 0 8px var(--prism-shadow-b));
+    animation-name: connector-composite-signal;
+  }
+
+  /* The meter retains its coloured flow, with a translated texture in its clip. */
+  .vitals-meter i { animation: none; overflow: hidden; }
+  .vitals-meter i::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 220%;
+    background: linear-gradient(90deg, transparent, rgba(214, 255, 243, 0.8), transparent);
+    animation: meter-light-pass 3.2s linear infinite;
+  }
+  .sao-window { will-change: auto; }
+}
+
+@keyframes surface-light-pass {
+  from { transform: translateX(var(--scan-start)); }
+  to { transform: translateX(calc(-1 * var(--scan-start))); }
+}
+@keyframes halo-breathe {
+  0%, 100% { opacity: 0.24; }
+  50% { opacity: 1; }
+}
+@keyframes status-composite-breathe {
+  0%, 100% { opacity: 0.68; transform: scale(0.88); }
+  50% { opacity: 1; transform: scale(1.12); }
+}
+@keyframes connector-composite-signal {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+@keyframes meter-light-pass {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(46%); }
+}
+
+/* Explicit pause for CSS animations; the spatial scheduler pauses WAAPI too. */
+body.effects-paused *,
+body.effects-paused *::before,
+body.effects-paused *::after { animation-play-state: paused !important; }
+
+
+/* Cached glass sits below the original material, never above readable content. */
+.hud-glass > .glass-cache,
+.sao-window > .glass-cache {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  pointer-events: none;
+}
+.has-glass-cache > .glass-cache { opacity: 1; }
+body[data-quality] .has-glass-cache,
+body[data-quality] .has-glass-cache::before,
+body[data-quality] .has-glass-cache::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+.hud-glass > .surface-outline,
+.sao-window > .surface-outline {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: var(--prism-cyan);
+  stroke-width: 0.8px;
+  opacity: 0.3;
+  pointer-events: none;
+}
+body[data-quality] .sao-window::before,
+body[data-quality] .hud-glass::before {
+  filter: drop-shadow(0 12px 22px rgba(5, 29, 50, 0.22));
+}
+body[data-quality] .sao-window.is-pointer-active::before,
+body[data-quality] .hud-glass.is-pointer-active::before {
+  filter: drop-shadow(0 16px 26px rgba(5, 29, 50, 0.28));
+}
+.sao-window.is-pointer-active > .surface-outline,
+.hud-glass.is-pointer-active > .surface-outline { opacity: 0.9; }
+body[data-quality] .world-note::after { filter: none; }
+body[data-quality] .identity-focus-shade {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+body[data-quality="balanced"] .sao-window::before,
+body[data-quality="balanced"] .hud-glass::before,
+body[data-quality="eco"] .sao-window::before,
+body[data-quality="eco"] .hud-glass::before {
+  filter: drop-shadow(0 8px 14px rgba(5, 29, 50, 0.2));
+}
+body[data-quality="eco"] .ambient-pod,
+body[data-quality="eco"] .theme-switch,
+body[data-quality="eco"] .sound-switch,
+body[data-quality="eco"] .home-node-rail {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background-color: var(--paper);
+}
+
+.effects-occluded,
+.effects-occluded *,
+.effects-occluded::before,
+.effects-occluded::after,
+.effects-occluded *::before,
+.effects-occluded *::after,
+.effects-offscreen,
+.effects-offscreen *,
+.effects-offscreen::before,
+.effects-offscreen::after,
+.effects-offscreen *::before,
+.effects-offscreen *::after { animation-play-state: paused !important; }
+
+.quality-control {
+  position: fixed;
+  z-index: 42;
+  top: max(152px, calc(env(safe-area-inset-top) + 136px));
+  right: max(24px, env(safe-area-inset-right));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--panel-inner-edge);
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--panel-background-strong);
+  box-shadow: 0 4px 14px rgba(7, 43, 67, 0.14);
+  font-family: var(--zh);
+  font-size: 11px;
+}
+.quality-control > span { opacity: 0.7; }
+.quality-control select {
+  max-width: 110px;
+  border: 0;
+  border-radius: 4px;
+  padding: 2px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.quality-control option { color: var(--ink); background: var(--page-base); }
+body[data-scene="intro"] .quality-control { display: none; }
+@media (max-width: 720px) {
+  .quality-control {
+    top: auto;
+    right: 12px;
+    bottom: max(84px, calc(env(safe-area-inset-bottom) + 72px));
+    padding: 6px 8px;
+    gap: 5px;
+    font-size: 10px;
+  }
 }
