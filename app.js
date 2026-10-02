@@ -71,9 +71,9 @@
 
   const videoGalleryLabels = {
     motion: {
-      kicker: 'VISUAL ARCHIVE / VFX-PV',
-      eyebrow: 'MOTION DESIGN // SELECTED WORKS',
-      title: 'AE 特效与视觉 PV',
+      kicker: 'VISUAL ARCHIVE / MOTION-PV',
+      eyebrow: 'PV & MOTION DESIGN // SELECTED WORKS',
+      title: '剪辑、动效与视觉 PV',
       description: '选择封面后将在新页面打开对应的 Bilibili 视频。',
     },
     digital: {
@@ -85,8 +85,8 @@
     anime: {
       kicker: 'VISUAL ARCHIVE / ANIME-VFX',
       eyebrow: 'ANIME VISUAL // SELECTED WORKS',
-      title: '动漫视觉与 VFX 创作',
-      description: '以动画作品为素材完成的 VFX、剪辑与视觉练习。',
+      title: '动画摄影与 VFX 创作',
+      description: '收录动画摄影、VFX 合成与视觉特效作品。',
     },
   };
 
@@ -137,6 +137,16 @@
   let introAudioStarted = false;
   let introVideoStarted = false;
   let introAudioRevealPending = false;
+  let introAudioRevealVersion = 0;
+  let introAudioFrameCallback = 0;
+  let introAudioRevealTimer = 0;
+  let introVideoWaiting = false;
+  let introAudioUnavailable = false;
+  let introLastVideoTime = 0;
+  let introLastVideoProgressAt = 0;
+  let introLastAudioTime = 0;
+  let introLastAudioProgressAt = 0;
+  let introLastAudioSeekAt = -Infinity;
   let introSyncTimer;
   let introLoadFallbackTimer;
   let introTransitionStarted = false;
@@ -258,18 +268,10 @@
     updateSoundButton();
     if (activeScene === 'intro') {
       if (!soundEnabled) {
-        introAudio.muted = true;
-        stopIntroSync();
-        body.dataset.introAudio = 'off';
+        pauseIntroAudio('off');
       } else if (introMediaRequested) {
-        introAudio.muted = true;
-        introAudio.play().then(() => {
-          introAudioStarted = true;
-          body.dataset.introAudio = 'starting';
-          makeIntroAudioAudible();
-        }).catch(() => {
-          body.dataset.introAudio = 'unavailable';
-        });
+        introAudioUnavailable = false;
+        makeIntroAudioAudible();
       }
       return;
     }
@@ -746,48 +748,126 @@
     }, delay);
   }
 
-  function stopIntroSync() {
-    window.clearInterval(introSyncTimer);
-    introSyncTimer = undefined;
-    introAudio.playbackRate = 1;
+  function cancelIntroAudioReveal() {
+    introAudioRevealVersion += 1;
+    if (introAudioFrameCallback) introVideo.cancelVideoFrameCallback?.(introAudioFrameCallback);
+    window.clearTimeout(introAudioRevealTimer);
+    introAudioFrameCallback = 0;
+    introAudioRevealTimer = 0;
     introAudioRevealPending = false;
   }
 
-  function syncIntroAudio(force = false) {
-    if (!introAudioStarted || introAudio.paused || introVideo.paused || introAudio.muted) return;
-    const drift = introAudio.currentTime - introVideo.currentTime;
+  function stopIntroSync() {
+    window.clearInterval(introSyncTimer);
+    introSyncTimer = undefined;
+    cancelIntroAudioReveal();
+    introAudio.playbackRate = 1;
+  }
 
-    if (force || Math.abs(drift) > 0.085) {
-      introAudio.currentTime = Math.max(0, introVideo.currentTime);
-      introAudio.playbackRate = 1;
+  function pauseIntroAudio(state = 'waiting') {
+    // Silence before pausing/seeking so a stalled video cannot replay an audible fragment.
+    introAudio.muted = true;
+    introAudio.pause();
+    introAudio.playbackRate = 1;
+    cancelIntroAudioReveal();
+    if (!introFinished && activeScene === 'intro') body.dataset.introAudio = soundEnabled ? state : 'off';
+  }
+
+  function canPlayIntroAudio() {
+    return activeScene === 'intro' && !introFinished && soundEnabled && !introAudioUnavailable
+      && !document.hidden && introVideoStarted && !introVideoWaiting
+      && !introVideo.paused && !introVideo.seeking && introVideo.readyState >= 3
+      && performance.now() - introLastVideoProgressAt < 600;
+  }
+
+  function syncIntroAudio() {
+    if (activeScene !== 'intro' || introFinished || document.hidden) return;
+    const now = performance.now();
+    const videoTime = introVideo.currentTime;
+    const videoAdvanced = videoTime > introLastVideoTime + 0.01;
+    if (videoAdvanced) introLastVideoProgressAt = now;
+    introLastVideoTime = videoTime;
+
+    if (introVideoStarted && now - introLastVideoProgressAt >= 8000) {
+      body.dataset.introVideo = 'timeout';
+      finishIntro();
       return;
     }
 
-    introAudio.playbackRate = Math.abs(drift) > 0.025
-      ? Math.max(0.985, Math.min(1.015, 1 - drift * 0.18))
+    if (!canPlayIntroAudio() || !videoAdvanced) {
+      if (!introAudio.paused || introAudioRevealPending) pauseIntroAudio();
+      return;
+    }
+    if (introAudio.ended) return;
+    if (introAudio.seeking || introAudio.readyState < 3) {
+      introAudio.muted = true;
+      body.dataset.introAudio = 'waiting';
+      return;
+    }
+
+    const drift = introAudio.currentTime - videoTime;
+    if (introAudio.paused || introAudio.muted || Math.abs(drift) > 0.35) {
+      if (Math.abs(drift) > 0.35 && !introAudio.muted) pauseIntroAudio('syncing');
+      // Large corrections happen silently and at most once per 1.5 seconds.
+      if (Math.abs(drift) <= 0.12 || now - introLastAudioSeekAt >= 1500) makeIntroAudioAudible();
+      return;
+    }
+
+    if (introAudio.currentTime > introLastAudioTime + 0.01) introLastAudioProgressAt = now;
+    introLastAudioTime = introAudio.currentTime;
+    if (now - introLastAudioProgressAt >= 1000) {
+      introAudioUnavailable = true;
+      pauseIntroAudio('unavailable');
+      return;
+    }
+    // Small clock differences need gentle rate adjustment, never repeated rewinds.
+    introAudio.playbackRate = Math.abs(drift) > 0.04
+      ? Math.max(0.97, Math.min(1.03, 1 - drift * 0.2))
       : 1;
   }
 
   function makeIntroAudioAudible() {
-    if (!soundEnabled || !introVideoStarted || !introAudioStarted || introAudioRevealPending) return;
+    if (!canPlayIntroAudio() || introAudioRevealPending || introAudio.seeking || introAudio.ended) return;
+    if (!introAudio.muted && !introAudio.paused) return;
     introAudioRevealPending = true;
+    const version = ++introAudioRevealVersion;
+    introAudio.muted = true;
+    if (introAudio.readyState >= 1 && Math.abs(introAudio.currentTime - introVideo.currentTime) > 0.12) {
+      introAudio.currentTime = Math.max(0, introVideo.currentTime);
+      introLastAudioSeekAt = performance.now();
+    }
+    introAudio.playbackRate = 1;
 
     const revealAudio = () => {
+      if (version !== introAudioRevealVersion) return;
+      introAudioFrameCallback = 0;
+      introAudioRevealTimer = 0;
       introAudioRevealPending = false;
-      if (activeScene !== 'intro' || !soundEnabled || introVideo.paused || introAudio.paused) return;
-      introAudio.currentTime = Math.max(0, introVideo.currentTime);
-      introAudio.playbackRate = 1;
+      if (!canPlayIntroAudio() || introAudio.paused || introAudio.seeking || introAudio.readyState < 3) return;
+      if (Math.abs(introAudio.currentTime - introVideo.currentTime) > 0.25) return;
       introAudio.muted = false;
+      introLastAudioTime = introAudio.currentTime;
+      introLastAudioProgressAt = performance.now();
       body.dataset.introAudio = 'playing';
-      window.clearInterval(introSyncTimer);
-      introSyncTimer = window.setInterval(() => syncIntroAudio(), 180);
     };
 
-    if (typeof introVideo.requestVideoFrameCallback === 'function') {
-      introVideo.requestVideoFrameCallback(revealAudio);
-    } else {
-      window.setTimeout(revealAudio, 0);
-    }
+    introAudio.play().then(() => {
+      if (version !== introAudioRevealVersion) return;
+      introAudioStarted = true;
+      if (!canPlayIntroAudio()) { pauseIntroAudio(); return; }
+      if (typeof introVideo.requestVideoFrameCallback === 'function') {
+        introAudioFrameCallback = introVideo.requestVideoFrameCallback(revealAudio);
+      } else {
+        introAudioRevealTimer = window.setTimeout(revealAudio, 0);
+      }
+    }).catch((error) => {
+      if (version !== introAudioRevealVersion) return;
+      introAudioRevealPending = false;
+      if (error.name !== 'AbortError') {
+        introAudioUnavailable = true;
+        pauseIntroAudio('unavailable');
+      }
+    });
   }
 
   function startIntroTransition() {
@@ -814,6 +894,9 @@
     introFinished = true;
     window.clearTimeout(introLoadFallbackTimer);
     stopIntroSync();
+    entryScene.classList.remove('is-active', 'is-launching', 'is-dissolving');
+    entryScene.setAttribute('aria-hidden', 'true');
+    entryScene.inert = true;
     introVideo.pause();
     introAudio.pause();
     introAudio.muted = true;
@@ -864,12 +947,22 @@
     introAudio.playbackRate = 1;
     introAudioStarted = false;
     introVideoStarted = false;
+    introVideoWaiting = false;
+    introAudioUnavailable = false;
+    introLastVideoTime = 0;
+    introLastVideoProgressAt = performance.now();
+    introLastAudioTime = 0;
+    introLastAudioProgressAt = performance.now();
+    introLastAudioSeekAt = -Infinity;
+    stopIntroSync();
+    introSyncTimer = window.setInterval(syncIntroAudio, 250);
     body.dataset.introAudio = soundEnabled ? 'starting' : 'off';
 
     const videoPlayback = introVideo.play();
     const audioPlayback = soundEnabled ? introAudio.play() : null;
 
     videoPlayback.then(() => {
+      if (introFinished || activeScene !== 'intro') return;
       introVideoStarted = true;
       if (!soundEnabled) body.dataset.introAudio = 'off';
       else if (!introAudioStarted) body.dataset.introAudio = 'starting';
@@ -878,16 +971,20 @@
       startIntroTransition();
       makeIntroAudioAudible();
     }).catch(() => {
+      if (introFinished || activeScene !== 'intro') return;
       body.dataset.introVideo = 'unavailable';
       finishIntro();
     });
 
     audioPlayback?.then(() => {
+      if (introFinished || activeScene !== 'intro') return;
       introAudioStarted = true;
-      body.dataset.introAudio = 'starting';
+      if (introAudio.muted) body.dataset.introAudio = soundEnabled ? 'starting' : 'off';
       makeIntroAudioAudible();
-    }).catch(() => {
-      body.dataset.introAudio = 'unavailable';
+    }).catch((error) => {
+      if (introFinished || activeScene !== 'intro' || error.name === 'AbortError') return;
+      introAudioUnavailable = true;
+      pauseIntroAudio('unavailable');
     });
 
     introLoadFallbackTimer = window.setTimeout(() => {
@@ -901,9 +998,25 @@
   introVideo.addEventListener('loadeddata', () => introScene.classList.add('is-video-ready'));
   introVideo.addEventListener('canplay', () => introScene.classList.add('is-video-ready'));
   introVideo.addEventListener('playing', () => {
+    if (introFinished || activeScene !== 'intro') return;
     introVideoStarted = true;
+    introVideoWaiting = false;
+    introLastVideoProgressAt = performance.now();
     startIntroTransition();
     makeIntroAudioAudible();
+  });
+  ['waiting', 'seeking', 'pause'].forEach((eventName) => {
+    introVideo.addEventListener(eventName, () => {
+      if (introFinished || activeScene !== 'intro') return;
+      introVideoWaiting = true;
+      pauseIntroAudio();
+    });
+  });
+  introVideo.addEventListener('stalled', () => {
+    if (activeScene === 'intro' && !introFinished && introVideo.readyState < 3) {
+      introVideoWaiting = true;
+      pauseIntroAudio();
+    }
   });
   introVideo.addEventListener('ended', finishIntro);
   introVideo.addEventListener('error', () => {
@@ -912,11 +1025,39 @@
   });
 
   introAudio.addEventListener('error', () => {
-    body.dataset.introAudio = 'unavailable';
+    if (introFinished || activeScene !== 'intro') return;
+    introAudioUnavailable = true;
+    pauseIntroAudio('unavailable');
   });
 
-  introVideo.addEventListener('timeupdate', () => {
-    syncIntroAudio();
+  introAudio.addEventListener('waiting', () => {
+    if (introFinished || activeScene !== 'intro') return;
+    introAudio.muted = true;
+    cancelIntroAudioReveal();
+    body.dataset.introAudio = soundEnabled ? 'waiting' : 'off';
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (introFinished || activeScene !== 'intro') return;
+    if (document.hidden) {
+      pauseIntroAudio();
+      introVideo.pause();
+    } else {
+      introLastVideoProgressAt = performance.now();
+      introVideo.play().catch(() => { if (!introFinished && activeScene === 'intro') finishIntro(); });
+    }
+  });
+  window.addEventListener('pagehide', () => {
+    if (introFinished || activeScene !== 'intro') return;
+    stopIntroSync();
+    pauseIntroAudio();
+    introVideo.pause();
+  });
+  window.addEventListener('pageshow', (event) => {
+    if (!event.persisted || introFinished || activeScene !== 'intro') return;
+    introLastVideoProgressAt = performance.now();
+    introSyncTimer = window.setInterval(syncIntroAudio, 250);
+    if (!document.hidden) introVideo.play().catch(() => { if (!introFinished) finishIntro(); });
   });
 
   startExperienceButton.addEventListener('click', beginIntroPlayback);

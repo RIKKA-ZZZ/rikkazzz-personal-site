@@ -6637,3 +6637,11 @@ body[data-scene="intro"] .quality-control { display: none; }
     font-size: 10px;
   }
 }
+
+/* Keep the archive description separate from its call-to-action. */
+[data-view-panel="blog"] .view-heading > p:last-child {
+  text-wrap: balance;
+}
+[data-view-panel="blog"] .archive-space-link {
+  display: flex;
+}
