@@ -78,9 +78,9 @@
     },
     digital: {
       kicker: 'PROJECT ARCHIVE / AI-WEB',
-      eyebrow: 'AI & WEB // EXPERIMENTAL BUILD',
-      title: 'AI 工具与网站实验',
-      description: '收录使用 AI Agent、网页技术与数字工具完成的个人项目。',
+      eyebrow: 'AI & WEB // SELECTED PROJECTS',
+      title: 'AI 创作与网站实验',
+      description: '收录 AI 影像创作、AI 工具与网站实验项目。',
     },
     anime: {
       kicker: 'VISUAL ARCHIVE / ANIME-VFX',
